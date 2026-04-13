@@ -152,15 +152,11 @@ func walkDecks(root string) ([]types.Card, error) {
 }
 
 // syncDB ensures the database reflects the current set of cards on disk.
-// New cards are inserted; cards no longer on disk are deleted.
+// New cards are inserted; cards no longer on disk are left untouched
+// and can be removed explicitly with the "orphans delete" command,
+// matching the Rust implementation's behaviour.
 func syncDB(cards []types.Card, database *db.Database) error {
 	// Build a set of hashes currently on disk.
-	onDisk := make(map[types.CardHash]struct{}, len(cards))
-	for _, card := range cards {
-		onDisk[card.Hash()] = struct{}{}
-	}
-
-	// Fetch hashes currently in the database.
 	inDB, err := database.CardHashes()
 	if err != nil {
 		return err
@@ -172,15 +168,6 @@ func syncDB(cards []types.Card, database *db.Database) error {
 	for _, card := range cards {
 		if _, exists := inDB[card.Hash()]; !exists {
 			if err := database.InsertCard(card.Hash(), now); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Delete cards that are in the database but no longer on disk.
-	for hash := range inDB {
-		if _, exists := onDisk[hash]; !exists {
-			if err := database.DeleteCard(hash); err != nil {
 				return err
 			}
 		}
