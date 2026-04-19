@@ -6,9 +6,12 @@
     display: flex;
     flex-direction: column;
     width: 100vw;
-    /* dvh accounts for browser chrome (address bar, gesture bar) on mobile.
-       Falls back to svh then vh for older browsers. */
-    height: 100dvh;
+    /* Use 100% so .root inherits body's height (100svh defined in base.css).
+       Using 100dvh here caused .root to overflow body in PWA standalone mode,
+       because body is clipped at 100svh while 100dvh equals the full screen
+       height including the home indicator area — the bottom controls were then
+       silently cut off by body's overflow:hidden. */
+    height: 100%;
 }
 
 /* ---- Header ---- */
