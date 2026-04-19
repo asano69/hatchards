@@ -2,14 +2,15 @@
 //
 // Actions handled by POST <mountPath>/:
 //
-//	Reveal  — flip the card to show the answer
-//	Forgot  — grade the card and advance
-//	Hard    — grade the card and advance
-//	Good    — grade the card and advance
-//	Easy    — grade the card and advance
-//	Undo    — reverse the most recent grade
-//	End     — end the session early (saves progress)
-//	ReturnHome   — save current session and start a new one
+//	Reveal     — flip the card to show the answer
+//	Forgot     — grade the card and advance
+//	Hard       — grade the card and advance
+//	Good       — grade the card and advance
+//	Easy       — grade the card and advance
+//	Undo       — reverse the most recent grade
+//	End        — end the session early (saves progress)
+//	Reset      — discard the session without saving and return home
+//	ReturnHome — save current session and start a new one
 package handlers
 
 import (
@@ -249,6 +250,13 @@ func (h *handler) postRoot(w http.ResponseWriter, r *http.Request) {
 	case "End":
 		h.finishSession()
 
+	case "Reset":
+		// Discard the current session without saving, reload fresh due cards,
+		// and return the user to the home page.
+		h.resetSession()
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+
 	case "ReturnHome":
 		h.finishSession()
 		h.resetSession()
@@ -320,7 +328,8 @@ func (h *handler) finishSession() {
 	}
 }
 
-// resetSession loads fresh due cards and creates a new session state.
+// resetSession loads fresh due cards and replaces the current session state.
+// Nothing from the current session is written to the database.
 func (h *handler) resetSession() {
 	col, err := collection.Load(h.collectionRoot, h.db)
 	if err != nil {

@@ -21,6 +21,9 @@
     padding: var(--space-md);
     border-bottom: 1px solid var(--color-border);
     background: var(--color-surface-raised);
+    /* Use relative positioning so the reset button can be placed absolutely
+       on the left while the progress bar remains centred. */
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -40,6 +43,45 @@
     background: var(--color-progress);
     transition: width 0.3s ease;
 }
+
+/* Reset button — anchored to the left edge of the header */
+.reset-form {
+    position: absolute;
+    left: var(--space-md);
+    display: flex;
+    align-items: center;
+
+}
+
+.reset-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--color-btn-bg);
+    border: 1px solid var(--color-btn-border);
+    color: var(--color-btn-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    box-shadow: var(--color-btn-shadow) 0 1px 3px 0;
+    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+    touch-action: manipulation;
+    padding: var(--space-sm);
+}
+
+.reset-btn:hover {
+    background: var(--color-btn-hover-bg);
+    border-color: var(--color-btn-hover-border);
+    box-shadow: var(--color-btn-shadow) 0 2px 5px 0;
+}
+.reset-btn:active {
+    background: var(--color-btn-active-bg);
+    border-color: var(--color-btn-active-border);
+    box-shadow: var(--color-btn-shadow) 0 0 2px 0;
+}
+
 
 /* ---- Card container ---- */
 
@@ -131,5 +173,9 @@ noscript .root .card-container .card .card-content {
         box-shadow: none;
         border-left: none;
         border-right: none;
+    }
+
+    .reset-btn {
+        font-size: 16px;
     }
 }

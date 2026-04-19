@@ -51,6 +51,12 @@ var displayMathRe = regexp.MustCompile(`(?s)\$\$(.+?)\$\$`)
 // inlineMathRe matches $...$ inline math (no newlines, non-greedy).
 var inlineMathRe = regexp.MustCompile(`\$([^$\n]+?)\$`)
 
+// clozePlaceholder is substituted into the markdown source before rendering,
+// then replaced with the actual HTML span after rendering. This matches the
+// Rust implementation's approach and ensures the placeholder is treated as
+// plain text by the markdown renderer (e.g. inside backtick code spans).
+const clozePlaceholder = "XHASHCARDSCLOZEX"
+
 // HTMLFront returns the HTML for the front face of a card.
 // fileMountBase is the URL prefix used when constructing /file/ paths,
 // e.g. "/drill/geo". Pass "" to use the bare path "/file/...".
@@ -60,8 +66,12 @@ func HTMLFront(card types.Card, deckFilePath string, fileMountBase string) (stri
 	case types.CardTypeBasic:
 		return renderMarkdown(cc.Question, deckFilePath, fileMountBase)
 	default: // CardTypeCloze
-		processed := processClozeText(cc.Text, cc.Start, cc.End, true)
-		return renderMarkdown(processed, deckFilePath, fileMountBase)
+		src := clozeWithPlaceholder(cc.Text, cc.Start, cc.End)
+		rendered, err := renderMarkdown(src, deckFilePath, fileMountBase)
+		if err != nil {
+			return "", err
+		}
+		return strings.ReplaceAll(rendered, clozePlaceholder, `<span class="cloze-blank">[...]</span>`), nil
 	}
 }
 
@@ -73,9 +83,50 @@ func HTMLBack(card types.Card, deckFilePath string, fileMountBase string) (strin
 	case types.CardTypeBasic:
 		return renderMarkdown(cc.Answer, deckFilePath, fileMountBase)
 	default: // CardTypeCloze
-		processed := processClozeText(cc.Text, cc.Start, cc.End, false)
-		return renderMarkdown(processed, deckFilePath, fileMountBase)
+		textBytes := []byte(cc.Text)
+		end := cc.End
+		if end >= len(textBytes) {
+			end = len(textBytes) - 1
+		}
+		// Render the deleted content separately as inline markdown so that
+		// any markup inside the deletion (e.g. math) is properly rendered.
+		deleted := string(textBytes[cc.Start : end+1])
+		renderedDeleted, err := renderMarkdownInline(deleted, deckFilePath, fileMountBase)
+		if err != nil {
+			return "", err
+		}
+		src := clozeWithPlaceholder(cc.Text, cc.Start, cc.End)
+		rendered, err := renderMarkdown(src, deckFilePath, fileMountBase)
+		if err != nil {
+			return "", err
+		}
+		revealSpan := `<span class="cloze-answer">` + renderedDeleted + `</span>`
+		return strings.ReplaceAll(rendered, clozePlaceholder, revealSpan), nil
 	}
+}
+
+// clozeWithPlaceholder replaces the bytes [start, end] in text with
+// clozePlaceholder and returns the resulting string.
+func clozeWithPlaceholder(text string, start, end int) string {
+	textBytes := []byte(text)
+	if end >= len(textBytes) {
+		end = len(textBytes) - 1
+	}
+	return string(textBytes[:start]) + clozePlaceholder + string(textBytes[end+1:])
+}
+
+// renderMarkdownInline renders markdown and strips the outer <p>...</p>
+// wrapper when the result is a single paragraph, matching the Rust
+// markdown_to_html_inline behaviour.
+func renderMarkdownInline(src, deckFilePath, fileMountBase string) (string, error) {
+	html, err := renderMarkdown(src, deckFilePath, fileMountBase)
+	if err != nil {
+		return "", err
+	}
+	if strings.HasPrefix(html, "<p>") && strings.HasSuffix(html, "</p>\n") {
+		return html[3 : len(html)-5], nil
+	}
+	return html, nil
 }
 
 // renderMarkdown converts a Markdown string to HTML, then rewrites image and
@@ -159,25 +210,4 @@ func isURL(src string) bool {
 		strings.HasPrefix(src, "https://") ||
 		strings.HasPrefix(src, "data:") ||
 		strings.Contains(src, "/file/")
-}
-
-// processClozeText rewrites raw cloze text into HTML suitable for rendering.
-func processClozeText(rawText string, targetStart, targetEnd int, isFront bool) string {
-	textBytes := []byte(rawText)
-	if targetEnd >= len(textBytes) {
-		targetEnd = len(textBytes) - 1
-	}
-
-	var sb strings.Builder
-	sb.Write(textBytes[:targetStart])
-	content := string(textBytes[targetStart : targetEnd+1])
-	if isFront {
-		sb.WriteString(`<span class="cloze-blank">[...]</span>`)
-	} else {
-		sb.WriteString(`<span class="cloze-answer">`)
-		sb.WriteString(content)
-		sb.WriteString(`</span>`)
-	}
-	sb.Write(textBytes[targetEnd+1:])
-	return sb.String()
 }

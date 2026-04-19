@@ -58,10 +58,10 @@
 
     /* Layout */
     --card-width-desktop: 900px;
-    --card-min-height:    400px;
+    --card-min-height:    460px;
     --card-max-height:    90%;
     --progress-bar-width: 300px;
-    --progress-bar-height:24px;
+    --progress-bar-height: 32px;
 
     /* Misc */
     --radius-sm:   3px;
