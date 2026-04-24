@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/asano69/hashcards/internal/collection"
-	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/parser"
 	"github.com/asano69/hashcards/internal/types"
 )
@@ -19,12 +18,11 @@ import (
 // deleteHandler serves the /delete page.
 type deleteHandler struct {
 	col       *collection.Collection
-	db        *db.Database
 	staticDir string
 }
 
 // deleteCardItem is one entry in the card list on the delete page.
-// For cloze families, one item represents the entire C: block.
+// Cloze siblings from the same C: block are merged into a single item.
 type deleteCardItem struct {
 	Hash  string // representative card hash used as the form value
 	Label string // display text shown to the user
@@ -70,7 +68,7 @@ func (h *deleteHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Expand selected hashes to include all siblings in the same source block.
+	// Expand to include all siblings in the same source block (handles cloze families).
 	toDelete := h.resolveCards(selectedHashes)
 
 	// Group cards by source file.
@@ -87,17 +85,8 @@ func (h *deleteHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Delete from the database.
-	deletedCount := 0
-	for _, card := range toDelete {
-		if err := h.db.DeleteCard(card.Hash()); err == nil {
-			deletedCount++
-		}
-	}
-
-	// Remove deleted cards from the in-memory collection so the page shows
-	// updated data immediately. This mutation is intentionally unguarded; it
-	// is acceptable for a single-user personal tool.
+	// Remove deleted cards from the in-memory collection so the page reflects
+	// the updated state immediately without requiring a server restart.
 	deletedSet := make(map[types.CardHash]struct{})
 	for _, card := range toDelete {
 		deletedSet[card.Hash()] = struct{}{}
@@ -110,9 +99,9 @@ func (h *deleteHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 	}
 	h.col.Cards = remaining
 
-	msg := fmt.Sprintf("Deleted %d card(s).", deletedCount)
+	msg := fmt.Sprintf("Deleted %d card(s) from file.", len(toDelete))
 	if len(errorMsgs) > 0 {
-		msg += " File errors: " + strings.Join(errorMsgs, "; ")
+		msg += " Errors: " + strings.Join(errorMsgs, "; ")
 	}
 	target := "/delete?deck=" + url.QueryEscape(deckName) + "&msg=" + url.QueryEscape(msg)
 	http.Redirect(w, r, target, http.StatusSeeOther)
@@ -286,8 +275,8 @@ func reconstructClozeText(cards []types.Card) string {
 }
 
 // deleteFromFile removes the given cards from a Markdown deck file by
-// deleting their line ranges. Cards with the same lineStart (cloze siblings)
-// are treated as a single block. Frontmatter is preserved.
+// deleting their line ranges. Cloze siblings (same lineStart) are treated
+// as one block. Frontmatter is preserved unchanged.
 func deleteFromFile(filePath string, cardsToDelete []types.Card) error {
 	allCards, err := parser.ParseFile(filePath)
 	if err != nil {
@@ -304,51 +293,52 @@ func deleteFromFile(filePath string, cardsToDelete []types.Card) error {
 		return fmt.Errorf("read file: %w", err)
 	}
 
-	// Normalise line endings and split.
-	text := strings.ReplaceAll(string(raw), "\r\n", "\n")
-	text = strings.TrimRight(text, "\n")
-	lines := strings.Split(text, "\n")
+	// Normalise line endings and split into individual lines.
+	content := strings.ReplaceAll(string(raw), "\r\n", "\n")
+	content = strings.TrimRight(content, "\n")
+	lines := strings.Split(content, "\n")
 
-	// Card line numbers from the parser are relative to the content after
-	// any frontmatter. Compute the offset to translate to full-file indices.
+	// Card line numbers from the parser are 1-indexed relative to the content
+	// after frontmatter. Compute the offset to translate to full-file indices.
 	fmOffset := frontmatterLineCount(lines)
 
-	// Sort all cards by lineStart and build a deduplicated list of card groups
-	// (multiple cloze siblings share the same lineStart/lineEnd).
+	// Build a deduplicated, sorted list of all card blocks in the file.
+	// Multiple cloze siblings from the same C: block share the same lineStart/lineEnd.
 	sort.Slice(allCards, func(i, j int) bool {
 		return allCards[i].LineStart() < allCards[j].LineStart()
 	})
-
-	type cardGroup struct{ lineStart, lineEnd int }
-	var groups []cardGroup
-	seenLS := make(map[int]bool)
+	type cardBlock struct{ lineStart, lineEnd int }
+	var blocks []cardBlock
+	seenStart := make(map[int]bool)
 	for _, c := range allCards {
-		if !seenLS[c.LineStart()] {
-			seenLS[c.LineStart()] = true
-			groups = append(groups, cardGroup{c.LineStart(), c.LineEnd()})
+		if !seenStart[c.LineStart()] {
+			seenStart[c.LineStart()] = true
+			blocks = append(blocks, cardBlock{c.LineStart(), c.LineEnd()})
 		}
 	}
 
-	// Mark which groups contain cards from the delete set.
-	deleteGroups := make(map[int]bool) // keyed by lineStart
+	// Determine which blocks contain cards to delete.
+	deleteBlocks := make(map[int]bool) // keyed by lineStart
 	for _, c := range allCards {
 		if _, del := deleteSet[c.Hash()]; del {
-			deleteGroups[c.LineStart()] = true
+			deleteBlocks[c.LineStart()] = true
 		}
 	}
 
 	// Mark individual file lines for deletion (0-indexed).
+	//
+	// Edge case: when a block's lineEnd equals the next block's lineStart,
+	// that shared line belongs to the next card (it is the Q:/C: line that
+	// triggered emission of the current card). Do not delete it.
 	toDelete := make([]bool, len(lines))
-	for i, g := range groups {
-		if !deleteGroups[g.lineStart] {
+	for i, b := range blocks {
+		if !deleteBlocks[b.lineStart] {
 			continue
 		}
-		start0 := g.lineStart - 1 + fmOffset
-		end0 := g.lineEnd - 1 + fmOffset
-		// When this group's lineEnd is the same as the next group's lineStart,
-		// that line belongs to the next card and must not be deleted.
-		if i+1 < len(groups) && g.lineEnd == groups[i+1].lineStart {
-			end0--
+		start0 := b.lineStart - 1 + fmOffset
+		end0 := b.lineEnd - 1 + fmOffset
+		if i+1 < len(blocks) && b.lineEnd == blocks[i+1].lineStart {
+			end0-- // shared line belongs to the next block
 		}
 		for l := start0; l <= end0 && l < len(toDelete); l++ {
 			toDelete[l] = true
@@ -382,10 +372,10 @@ func frontmatterLineCount(lines []string) int {
 			return i + 1
 		}
 	}
-	return 0 // no closing delimiter found → treat whole file as content
+	return 0 // no closing delimiter → treat whole file as content
 }
 
-// cleanupFileLines removes leading/trailing blank lines and collapses
+// cleanupFileLines removes leading/trailing blank lines and collapses runs of
 // consecutive blank lines into a single blank line.
 func cleanupFileLines(lines []string) []string {
 	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
