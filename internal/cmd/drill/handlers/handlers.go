@@ -206,10 +206,16 @@ type handler struct {
 // -------------------------------------------------------------------------
 // GET handler
 // -------------------------------------------------------------------------
-
 func (h *handler) getRoot(w http.ResponseWriter, r *http.Request) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+
+	// If no reviews have been started yet, reload the session from disk so
+	// that cards added or deleted since server startup are reflected
+	// immediately without waiting for a session to complete.
+	if len(h.sess.Done) == 0 && !h.sess.Revealed && !h.sess.IsFinished() {
+		h.resetSession()
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 

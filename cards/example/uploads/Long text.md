@@ -1,14 +1,5 @@
-Q: aaa
-A: fff
----
-Q: testtest
-A: sfsdfsdfsdfsd
-
-----
-
-Q: sfdsfsd
-A: dsdfsdfsdfsdfds
-
-----
+Q: qqqqq
+A: qqqqqq
 
 ---
+
