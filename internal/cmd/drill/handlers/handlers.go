@@ -351,8 +351,17 @@ func (h *handler) resetSession() {
 	if h.burySiblingsOn {
 		due = BurySiblings(due)
 	}
+
+	// Shuffle before filtering so that new card selection is random rather
+	// than always picking the same cards in hash order.
 	r := rng.FromSeed(uint64(time.Now().UnixNano()))
+	due = rng.Shuffle(due, r)
+	due = FilterDue(due, h.cardLimit, h.newCardLimit, h.deckFilter)
+	if h.burySiblingsOn {
+		due = BurySiblings(due)
+	}
 	h.sess = state.New(due, r, h.fsrsCfg)
+
 	h.cache = drillcache.Build(due, h.mountPath)
 	h.sessionSaved = false
 	h.endedAt = time.Time{}

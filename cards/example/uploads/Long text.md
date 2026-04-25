@@ -1,5 +1,0 @@
-Q: qqqqq
-A: qqqqqq
-
----
-

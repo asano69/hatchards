@@ -282,7 +282,15 @@ func registerDrillRoute(
 	fmt.Printf("[session] name=%q path=%q %s cards=%d\n",
 		sc.Name, mountPath, deckLabel, len(due))
 
+	// Shuffle before filtering so that new card selection is random rather
+	// than always picking the same cards in hash order.
 	r := rng.FromSeed(uint64(time.Now().UnixNano()))
+	due = rng.Shuffle(due, r)
+	due = handlers.FilterDue(due, cardLimit, newCardLimit, deckFilter)
+	if burySiblings {
+		due = handlers.BurySiblings(due)
+	}
+
 	sess := drillstate.New(due, r, fsrsCfg)
 	htmlCache := drillcache.Build(due, mountPath)
 
