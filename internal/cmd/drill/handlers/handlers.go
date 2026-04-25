@@ -471,7 +471,7 @@ func (h *handler) renderDone(w http.ResponseWriter) {
 }
 
 func (h *handler) renderNoCards(w http.ResponseWriter) {
-	h.renderTemplate(w, "no_cards.html", struct{}{})
+	h.renderTemplate(w, "no_cards.html", struct{ BasePath string }{h.mountPath + "/"})
 }
 
 // -------------------------------------------------------------------------

@@ -136,10 +136,14 @@ func Run(cfg *config.Config, staticDir string, out io.Writer) error {
 	}
 
 	// Index page — server-rendered with Go templates, no client-side JS fetch needed.
-	// Session infos are recomputed on every request so retrievability reflects
-	// reviews completed since the server started.
+	// The collection is reloaded on every request so retrievability and card counts
+	// reflect cards added or deleted since the server started.
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		renderIndex(w, staticDir, buildSessionList(cfg, col, database))
+		freshCol, err := collection.Load(cfg.Data.Root, database)
+		if err != nil {
+			freshCol = col
+		}
+		renderIndex(w, staticDir, buildSessionList(cfg, freshCol, database))
 	}).Methods(http.MethodGet)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
