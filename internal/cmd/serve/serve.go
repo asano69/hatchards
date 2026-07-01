@@ -56,6 +56,7 @@ type newCardData struct {
 
 // Run opens the database and collection once, registers all drill routes, then
 // starts listening. The database and collection are shared across all sessions.
+// internal/cmd/serve/serve.go
 
 func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 	database, err := db.New(app)
@@ -74,16 +75,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 	}
 
 	router := http.NewServeMux()
-	// Serve embedded static assets under /static/.
-	router.Handle("GET /static/",
-		http.StripPrefix("/static/", http.FileServer(http.FS(assets.FS))),
-	)
-
-	// Serve KaTeX assets under /katex/ too, since katex.min.css references
-	// /katex/fonts/... with absolute paths.
-	router.Handle("GET /katex/",
-		http.StripPrefix("/katex/", http.FileServer(http.FS(assets.Sub("katex")))),
-	)
 
 	router.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
@@ -118,8 +109,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 	})
 	for _, sc := range sessions {
 		sc := sc
-		// Use "/drill" (no trailing slash) for the all-decks session so that
-		// the BasePath in templates becomes "/drill/" without a double slash.
 		var mountPath string
 		if sc.Path == "" {
 			mountPath = "/drill"
@@ -131,9 +120,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 		}
 	}
 
-	// Index page — server-rendered with Go templates, no client-side JS fetch needed.
-	// The collection is reloaded on every request so retrievability and card counts
-	// reflect cards added or deleted since the server started.
 	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -148,6 +134,12 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
+		// Serve embedded static assets under /static/ and /katex/ using
+		// PocketBase's own static-file handler, instead of a hand-rolled
+		// http.StripPrefix + http.FileServer wrapper.
+		e.Router.GET("/static/{path...}", apis.Static(assets.FS, false))
+		e.Router.GET("/katex/{path...}", apis.Static(assets.Sub("katex"), false))
+
 		e.Router.Any("/{path...}", apis.WrapStdHandler(router))
 		return e.Next()
 	})
