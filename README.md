@@ -110,7 +110,7 @@ To learn how to write good flashcards, read [Effective Spaced Repetition][esr].
 
 This section documents the hashcards command line interface.
 
-### `drill`
+### `serve`
 
 Start a drilling session.
 
