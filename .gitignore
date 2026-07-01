@@ -5,3 +5,7 @@
 /result
 /data/
 /pb_data/
+
+
+/node_modules
+/internal/assets/static/katex

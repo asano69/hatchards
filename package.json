@@ -1,0 +1,10 @@
+{
+  "name": "hashcards-assets",
+  "private": true,
+  "scripts": {
+    "sync-assets": "node scripts/sync-assets.mjs"
+  },
+  "dependencies": {
+    "katex": "^0.16.9"
+  }
+}

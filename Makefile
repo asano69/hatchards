@@ -1,9 +1,13 @@
 BINARY := hashcards
 
-.PHONY: build
-build:
-	go build -o $(BINARY) ./cmd/$(BINARY)
+.PHONY: sync-assets
+sync-assets:
+	pnpm install
+	pnpm run sync-assets
 
+.PHONY: build
+build: sync-assets
+	go build -o $(BINARY) ./cmd/$(BINARY)
 
 kill-ports:
 	@lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true

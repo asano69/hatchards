@@ -60,8 +60,17 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
 
+	// GET /api/sessions reloads the collection from disk on every request so
+	// that decks/cards added or removed since startup are reflected in the
+	// session list and the retrievability percentages shown on the index
+	// page. This mirrors the reload that the old server-rendered "/" route
+	// used to perform before rendering index.html.
 	router.HandleFunc("GET /api/sessions", func(w http.ResponseWriter, r *http.Request) {
-		sessionJSON, _ := json.Marshal(buildSessionList(cfg, col, database))
+		freshCol, err := collection.Load(cfg.Data.Root, database)
+		if err != nil {
+			freshCol = col
+		}
+		sessionJSON, _ := json.Marshal(buildSessionList(cfg, freshCol, database))
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(sessionJSON)
 	})
@@ -98,16 +107,15 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
 		http.ServeFileFS(w, r, assets.FS, "drill.html")
 	})
 
+	// GET / serves a static shell; index.js fetches /api/sessions and
+	// renders the session list client-side. No server-side templating.
 	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
-		freshCol, err := collection.Load(cfg.Data.Root, database)
-		if err != nil {
-			freshCol = col
-		}
-		renderIndex(w, buildSessionList(cfg, freshCol, database))
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		http.ServeFileFS(w, r, assets.FS, "index.html")
 	})
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
@@ -180,19 +188,4 @@ func buildSessionList(cfg *config.Config, col *collection.Collection, database *
 		})
 	}
 	return list
-}
-
-// renderIndex renders the index page using Go templates with the session list
-// injected server-side, eliminating the need for a client-side fetch.
-func renderIndex(w http.ResponseWriter, sessions []sessionInfo) {
-	tmpl, err := assets.ParseTemplate("index.html")
-	if err != nil {
-		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	data := struct{ Sessions []sessionInfo }{sessions}
-	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
-		fmt.Printf("index render error: %v\n", err)
-	}
 }
