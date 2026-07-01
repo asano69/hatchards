@@ -1,24 +1,21 @@
-// Package stats implements the "stats" subcommand, which prints a summary
-// of card counts and review activity for the collection.
 package stats
 
 import (
 	"fmt"
 	"io"
 
+	"github.com/pocketbase/pocketbase"
+
 	"github.com/asano69/hashcards/internal/collection"
 	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/types"
 )
 
-// Run opens the database at dbPath, loads the collection at root, and writes
-// a human-readable stats summary to out.
-func Run(root, dbPath string, out io.Writer) error {
-	database, err := db.Open(dbPath)
+func Run(app *pocketbase.PocketBase, root string, out io.Writer) error {
+	database, err := db.New(app)
 	if err != nil {
 		return err
 	}
-	defer database.Close()
 
 	col, err := collection.Load(root, database)
 	if err != nil {

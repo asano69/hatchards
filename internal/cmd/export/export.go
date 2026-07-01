@@ -4,11 +4,11 @@ package export
 
 import (
 	"encoding/json"
-	"io"
-
 	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/fsrs"
 	"github.com/asano69/hashcards/internal/types"
+	"github.com/pocketbase/pocketbase"
+	"io"
 )
 
 // ExportedReview is one review record in the JSON output.
@@ -34,12 +34,11 @@ type ExportedSession struct {
 
 // Run reads all sessions and reviews from the database at dbPath and writes
 // them as a JSON array to out. The output is indented for readability.
-func Run(dbPath string, out io.Writer) error {
-	database, err := db.Open(dbPath)
+func Run(app *pocketbase.PocketBase, out io.Writer) error {
+	database, err := db.New(app)
 	if err != nil {
 		return err
 	}
-	defer database.Close()
 
 	sessions, err := database.GetAllSessions()
 	if err != nil {

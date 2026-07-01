@@ -1,6 +1,6 @@
 // Package orphans implements the "orphans" subcommand, which lists or deletes
 // cards that exist in the performance database but are no longer present in
-// any deck file — matching the Rust implementation in cmd/orphans.rs.
+// any deck file — matching the Rust implementation in cmd/orphans.rs
 package orphans
 
 import (
@@ -8,19 +8,18 @@ import (
 	"io"
 	"sort"
 
+	"github.com/pocketbase/pocketbase"
+
 	"github.com/asano69/hashcards/internal/collection"
 	"github.com/asano69/hashcards/internal/db"
 	"github.com/asano69/hashcards/internal/types"
 )
 
-// List prints the hex hash of every orphan card, one per line.
-// An orphan card is one that exists in the database but not in the collection.
-func List(root, dbPath string, out io.Writer) error {
-	database, err := db.Open(dbPath)
+func List(app *pocketbase.PocketBase, root string, out io.Writer) error {
+	database, err := db.New(app)
 	if err != nil {
 		return err
 	}
-	defer database.Close()
 
 	orphans, err := getOrphans(root, database)
 	if err != nil {
@@ -33,14 +32,11 @@ func List(root, dbPath string, out io.Writer) error {
 	return nil
 }
 
-// Delete removes every orphan card from the database and prints each deleted
-// hash, one per line.
-func Delete(root, dbPath string, out io.Writer) error {
-	database, err := db.Open(dbPath)
+func Delete(app *pocketbase.PocketBase, root string, out io.Writer) error {
+	database, err := db.New(app)
 	if err != nil {
 		return err
 	}
-	defer database.Close()
 
 	orphans, err := getOrphans(root, database)
 	if err != nil {
@@ -56,12 +52,9 @@ func Delete(root, dbPath string, out io.Writer) error {
 	return nil
 }
 
-// getOrphans returns card hashes that are in the database but not in the
-// collection, sorted for deterministic output.
+// getOrphans is unchanged except for one call:
 func getOrphans(root string, database *db.Database) ([]types.CardHash, error) {
-	// Use an in-memory DB just to load the collection without side effects on
-	// the real database; pass the real database for hash lookups below.
-	memDB, err := db.Open(":memory:")
+	memDB, err := db.OpenScratch()
 	if err != nil {
 		return nil, err
 	}

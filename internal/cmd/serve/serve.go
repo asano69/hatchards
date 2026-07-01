@@ -25,6 +25,7 @@ import (
 	"github.com/asano69/hashcards/internal/fsrs"
 	"github.com/asano69/hashcards/internal/rng"
 	"github.com/asano69/hashcards/internal/types"
+	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -55,18 +56,17 @@ type newCardData struct {
 
 // Run opens the database and collection once, registers all drill routes, then
 // starts listening. The database and collection are shared across all sessions.
-func Run(cfg *config.Config, out io.Writer) error {
-	database, err := db.Open(cfg.Data.DB)
+
+func Run(app *pocketbase.PocketBase, cfg *config.Config, out io.Writer) error {
+	database, err := db.New(app)
 	if err != nil {
 		return err
 	}
-	defer database.Close()
 
 	col, err := collection.Load(cfg.Data.Root, database)
 	if err != nil {
 		return err
 	}
-
 	fsrsCfg := fsrs.FSRSConfig{
 		TargetRecall: cfg.FSRS.TargetRecall,
 		MinInterval:  cfg.FSRS.MinInterval,
@@ -147,11 +147,7 @@ func Run(cfg *config.Config, out io.Writer) error {
 	})
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
-	app := database.App()
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
-		// Mount the hashcards HTTP handlers on PocketBase's router so the
-		// PocketBase admin UI and APIs remain available on the same server
-		// (for example, http://localhost:3000/_/).
 		e.Router.Any("/{path...}", apis.WrapStdHandler(router))
 		return e.Next()
 	})

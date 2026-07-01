@@ -16,7 +16,6 @@ type ServerConfig struct {
 
 // DataConfig holds data storage settings.
 type DataConfig struct {
-	DB   string `toml:"db"`
 	Root string `toml:"root"`
 }
 
@@ -82,9 +81,6 @@ func Load(path string) (*Config, error) {
 	}
 
 	// Data defaults.
-	if cfg.Data.DB == "" {
-		cfg.Data.DB = "hashcards.db"
-	}
 	if cfg.Data.Root == "" {
 		cfg.Data.Root = "."
 	}

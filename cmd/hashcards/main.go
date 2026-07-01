@@ -18,12 +18,12 @@ import (
 )
 
 func main() {
-	// pocketbase.New() only builds the RootCmd; it does not register
-	// PocketBase's own default commands (that only happens via Start()).
-	// This lets us reuse PocketBase's cobra machinery (and its "superuser"
-	// command, which operates on the same pb_data directory as "serve")
-	// without pocketbase's built-in "serve" command shadowing ours.
-	app := pocketbase.New()
+	// A single PocketBase instance is shared by every subcommand. Its data
+	// directory is controlled by the standard "--dir" flag (registered
+	// automatically by NewWithConfig), and it is bootstrapped exactly once,
+	// before any subcommand's RunE, via the PersistentPreRunE hook that
+	// PocketBase installs on RootCmd.
+	app := pocketbase.NewWithConfig(pocketbase.Config{HideStartBanner: true})
 
 	root := app.RootCmd
 	root.Use = "hashcards"
@@ -32,18 +32,16 @@ func main() {
 
 	root.AddCommand(
 		checkCmd(),
-		statsCmd(),
-		exportCmd(),
-		orphansCmd(),
-		serveCmd(),
+		statsCmd(app),
+		exportCmd(app),
+		orphansCmd(app),
+		serveCmd(app),
 		// PocketBase's built-in command for managing admin accounts.
-		// It bootstraps its own app instance using the "--dir" flag
-		// (default: "pb_data"), matching config.toml's [data].db default.
+		// It shares the same app, so it always targets the same data
+		// directory as every other command.
 		pbcmd.NewSuperuserCommand(app),
 	)
 
-	// app.Execute() bootstraps the app and runs RootCmd with graceful
-	// shutdown support, without registering PocketBase's default commands.
 	if err := app.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -52,6 +50,8 @@ func main() {
 // -------------------------------------------------------------------------
 // check
 // -------------------------------------------------------------------------
+// check always runs against a disposable database (see db.OpenScratch), so
+// it never touches the shared app or the real data directory.
 func checkCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "check <collection-root>",
@@ -74,86 +74,70 @@ func checkCmd() *cobra.Command {
 // -------------------------------------------------------------------------
 // stats
 // -------------------------------------------------------------------------
-func statsCmd() *cobra.Command {
-	var dbPath string
-	cmd := &cobra.Command{
+func statsCmd(app *pocketbase.PocketBase) *cobra.Command {
+	return &cobra.Command{
 		Use:   "stats <collection-root>",
 		Short: "Print card counts and review statistics",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return stats.Run(args[0], dbPath, os.Stdout)
+			return stats.Run(app, args[0], os.Stdout)
 		},
 	}
-	cmd.Flags().StringVar(&dbPath, "db", "hashcards.db",
-		"path to the performance database")
-	return cmd
 }
 
 // -------------------------------------------------------------------------
 // export
 // -------------------------------------------------------------------------
-func exportCmd() *cobra.Command {
-	var dbPath string
-	cmd := &cobra.Command{
+func exportCmd(app *pocketbase.PocketBase) *cobra.Command {
+	return &cobra.Command{
 		Use:   "export",
 		Short: "Export review history as JSON",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return export.Run(dbPath, os.Stdout)
+			return export.Run(app, os.Stdout)
 		},
 	}
-	cmd.Flags().StringVar(&dbPath, "db", "hashcards.db",
-		"path to the performance database")
-	return cmd
 }
 
 // -------------------------------------------------------------------------
 // orphans
 // -------------------------------------------------------------------------
-func orphansCmd() *cobra.Command {
+func orphansCmd(app *pocketbase.PocketBase) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "orphans",
 		Short:        "Commands relating to orphan cards",
 		SilenceUsage: true,
 	}
-	cmd.AddCommand(orphansListCmd(), orphansDeleteCmd())
+	cmd.AddCommand(orphansListCmd(app), orphansDeleteCmd(app))
 	return cmd
 }
 
-func orphansListCmd() *cobra.Command {
-	var dbPath string
-	cmd := &cobra.Command{
+func orphansListCmd(app *pocketbase.PocketBase) *cobra.Command {
+	return &cobra.Command{
 		Use:   "list <collection-root>",
 		Short: "List the hashes of all orphan cards in the collection",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return orphans.List(args[0], dbPath, os.Stdout)
+			return orphans.List(app, args[0], os.Stdout)
 		},
 	}
-	cmd.Flags().StringVar(&dbPath, "db", "hashcards.db",
-		"path to the performance database")
-	return cmd
 }
 
-func orphansDeleteCmd() *cobra.Command {
-	var dbPath string
-	cmd := &cobra.Command{
+func orphansDeleteCmd(app *pocketbase.PocketBase) *cobra.Command {
+	return &cobra.Command{
 		Use:   "delete <collection-root>",
 		Short: "Remove all orphan cards from the database",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return orphans.Delete(args[0], dbPath, os.Stdout)
+			return orphans.Delete(app, args[0], os.Stdout)
 		},
 	}
-	cmd.Flags().StringVar(&dbPath, "db", "hashcards.db",
-		"path to the performance database")
-	return cmd
 }
 
 // -------------------------------------------------------------------------
 // serve
 // -------------------------------------------------------------------------
-func serveCmd() *cobra.Command {
+func serveCmd(app *pocketbase.PocketBase) *cobra.Command {
 	var configPath string
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -164,7 +148,7 @@ func serveCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("load config %s: %w", configPath, err)
 			}
-			return serve.Run(cfg, os.Stdout)
+			return serve.Run(app, cfg, os.Stdout)
 		},
 	}
 	cmd.Flags().StringVar(&configPath, "config", "config.toml",

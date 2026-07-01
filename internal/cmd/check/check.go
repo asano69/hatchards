@@ -27,7 +27,7 @@ func (r Result) OK() bool { return len(r.Errors) == 0 }
 // Run loads the collection at root and validates every card's rendered HTML
 // and every media reference it contains.
 func Run(root string, out io.Writer) (Result, error) {
-	database, err := db.Open(":memory:")
+	database, err := db.OpenScratch()
 	if err != nil {
 		return Result{}, err
 	}

@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	_ "embed"
 	"os"
-	"path/filepath"
 
 	"github.com/asano69/hashcards/internal/errs"
 	"github.com/asano69/hashcards/internal/fsrs"
@@ -42,29 +41,36 @@ type ReviewRow struct {
 
 type Database struct{ app *pocketbase.PocketBase }
 
-func Open(path string) (*Database, error) {
-	if path == ":memory:" {
-		d, err := os.MkdirTemp("", "hashcards-pocketbase-*")
-		if err != nil {
-			return nil, errs.Newf("create temporary PocketBase data directory: %v", err)
-		}
-		path = d
-	} else {
-		dir := filepath.Dir(path)
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			return nil, errs.Newf("database directory does not exist: %s (create it or update [data].db in config.toml)", dir)
-		}
-		if filepath.Ext(path) != "" {
-			path = filepath.Join(dir, filepath.Base(path)+".pb_data")
-		}
+// OpenScratch creates a Database backed by a fresh, disposable PocketBase
+// instance in its own temporary directory. Each call returns an
+// independent, empty database with no effect on any other Database.
+// PocketBase always needs a directory on disk, so this is hashcards'
+// equivalent of SQLite's ":memory:" mode.
+func OpenScratch() (*Database, error) {
+	dir, err := os.MkdirTemp("", "hashcards-pocketbase-*")
+	if err != nil {
+		return nil, errs.Newf("create temporary PocketBase data directory: %v", err)
 	}
-	app := pocketbase.NewWithConfig(pocketbase.Config{DefaultDataDir: path, HideStartBanner: true})
+	app := pocketbase.NewWithConfig(pocketbase.Config{DefaultDataDir: dir, HideStartBanner: true})
 	if err := app.Bootstrap(); err != nil {
 		return nil, errs.Newf("bootstrap PocketBase: %v", err)
 	}
+	return newDatabase(app)
+}
+
+// New wraps an already-bootstrapped PocketBase app and ensures the
+// hashcards schema exists in it. app is expected to be the single instance
+// shared by the whole CLI (see cmd/hashcards/main.go); its data directory is
+// controlled by PocketBase's standard "--dir" flag, not by hashcards itself.
+func New(app *pocketbase.PocketBase) (*Database, error) {
+	return newDatabase(app)
+}
+
+// newDatabase wraps app in a Database and ensures the hashcards schema
+// exists in it.
+func newDatabase(app *pocketbase.PocketBase) (*Database, error) {
 	db := &Database{app: app}
 	if err := db.ensureSchema(); err != nil {
-		_ = db.Close()
 		return nil, err
 	}
 	return db, nil

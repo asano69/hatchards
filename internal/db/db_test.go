@@ -10,9 +10,9 @@ import (
 // openMemory opens an in-memory database for testing.
 func openMemory(t *testing.T) *Database {
 	t.Helper()
-	db, err := Open(":memory:")
+	db, err := OpenScratch()
 	if err != nil {
-		t.Fatalf("Open(:memory:): %v", err)
+		t.Fatalf("OpenScratch: %v", err)
 	}
 	t.Cleanup(func() { db.Close() })
 	return db

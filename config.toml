@@ -4,7 +4,7 @@ port = 3000
 
 [data]
 root = "./cards"
-db = "./pb_data"
+
 
 [fsrs]
 target_recall = 0.9
