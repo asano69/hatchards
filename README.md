@@ -86,7 +86,7 @@ this saves you from having to specify the context in each of the flashcards.
 Start drilling:
 
 ```bash
-$ hashcards drill
+$ hashcards serve
 ```
 
 This opens a web interface at `http://localhost:8000` where you can review your
@@ -115,7 +115,7 @@ This section documents the hashcards command line interface.
 Start a drilling session.
 
 ```bash
-$ hashcards drill [DIRECTORY]
+$ hashcards serve --dir [DIRECTORY] --config [FILE]
 ```
 
 Note: your progress is not saved until the session ends, either when you run out
