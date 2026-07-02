@@ -14,6 +14,11 @@ build: build-frontend
 
 kill-ports:
 	@lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
+	@lsof -ti:3001 | xargs -r kill -9 2>/dev/null || true
+
+server: kill-ports
+	cd frontend && pnpm watch &
+	air &
 
 .PHONY: prod
 prod: kill-ports build

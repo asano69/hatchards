@@ -6,9 +6,9 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-args_bin = ["serve", "--http=127.0.0.1:3000", "--dir=../pb_data"]
+args_bin = ["serve", "--config=config.toml", "--dir=./pb_data"]
 bin = "./tmp/main"
-cmd = "go build -o ./tmp/main ."
+cmd = "go build -o ./tmp/main ./cmd/hashcards"
 delay = 1000
 entrypoint = ["./tmp/main"]
 exclude_dir = ["assets", "tmp", "vendor", "testdata"]
