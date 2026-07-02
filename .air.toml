@@ -6,7 +6,7 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-args_bin = []
+args_bin = ["serve", "--http=127.0.0.1:3000", "--dir=../pb_data"]
 bin = "./tmp/main"
 cmd = "go build -o ./tmp/main ."
 delay = 1000
