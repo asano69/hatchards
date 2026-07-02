@@ -210,15 +210,11 @@ func (db *Database) findCardRecord(cardHash types.CardHash) (*core.Record, error
 	return record, nil
 }
 
+// InsertCard adds a new card record. If a card with the same hash already
+// exists, the "cards" collection's unique index on card_hash rejects the
+// save and that failure is surfaced directly, avoiding a separate
+// existence-check query.
 func (db *Database) InsertCard(cardHash types.CardHash, addedAt types.Timestamp) error {
-	existing, err := db.findCardRecord(cardHash)
-	if err != nil {
-		return errs.Newf("check card existence: %v", err)
-	}
-	if existing != nil {
-		return errs.New("Card already exists")
-	}
-
 	collection, err := db.app.FindCollectionByNameOrId("cards")
 	if err != nil {
 		return errs.Newf("find cards collection: %v", err)
@@ -249,37 +245,26 @@ func (db *Database) CardHashes() (map[types.CardHash]struct{}, error) {
 	return m, nil
 }
 
-// DueToday is unchanged in this stage (see Stage 4).
+// DueToday returns the hashes of all cards due for review on or before today.
+// A card with no due date yet (i.e. a new card) is always due.
 func (db *Database) DueToday(today types.Date) (map[types.CardHash]struct{}, error) {
-	rows, err := db.q("select card_hash, due_date from cards;", nil).Rows()
+	records, err := db.app.FindRecordsByFilter(
+		"cards", "due_date = {:empty} || due_date <= {:today}", "", 0, 0,
+		dbx.Params{"empty": "", "today": today.String()},
+	)
 	if err != nil {
 		return nil, errs.Newf("query due today: %v", err)
 	}
-	defer rows.Close()
-	due := map[types.CardHash]struct{}{}
-	for rows.Next() {
-		var hex string
-		var dueStr sql.NullString
-		if err := rows.Scan(&hex, &dueStr); err != nil {
-			return nil, errs.Newf("scan due today row: %v", err)
-		}
-		h, err := types.ParseCardHash(hex)
+
+	due := make(map[types.CardHash]struct{}, len(records))
+	for _, r := range records {
+		h, err := types.ParseCardHash(r.GetString("card_hash"))
 		if err != nil {
 			return nil, err
 		}
-		if !dueStr.Valid || dueStr.String == "" {
-			due[h] = struct{}{}
-			continue
-		}
-		dd, err := types.ParseDate(dueStr.String)
-		if err != nil {
-			return nil, err
-		}
-		if dd.LessOrEqual(today) {
-			due[h] = struct{}{}
-		}
+		due[h] = struct{}{}
 	}
-	return due, rows.Err()
+	return due, nil
 }
 
 func (db *Database) GetCardPerformanceOpt(cardHash types.CardHash) (*types.Performance, error) {
