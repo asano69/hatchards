@@ -135,26 +135,6 @@ strong {
 .controls .grades {
   @apply flex flex-row justify-between;
 }
-
-.btn {
-  background: var(--color-field);
-  border: 1px solid var(--color-border-soft);
-  color: var(--color-text);
-  box-shadow: 0 1px 3px 0 var(--color-shadow);
-  @apply my-1.5 cursor-pointer appearance-none rounded-md px-3 py-[7px]
-         font-sans text-base font-semibold transition-colors
-         transition-shadow duration-150 md:mx-3 md:my-0
-         disabled:cursor-not-allowed disabled:opacity-40;
-}
-.btn:hover:not(:disabled) {
-  background: var(--color-hover-bg);
-  border-color: var(--color-hover-border);
-}
-.btn:active:not(:disabled) {
-  background: var(--color-active-bg);
-  border-color: var(--color-active-border);
-}
-
 /* ---------- Session summary screen ---------- */
 
 .finished {
@@ -224,21 +204,6 @@ strong {
 }
 .shutdown-container form {
   @apply inline-block;
-}
-.shutdown-button {
-  background: #dc3545;
-  border: 1px solid #c82333;
-  box-shadow: 0 2px 8px 0 rgb(220 53 69 / 0.3);
-  @apply cursor-pointer rounded-md px-6 py-3 text-lg font-semibold text-white
-         transition-colors transition-shadow duration-200;
-}
-.shutdown-button:hover {
-  background: #c82333;
-  box-shadow: 0 4px 12px 0 rgb(220 53 69 / 0.5);
-}
-.shutdown-button:active {
-  background: #bd2130;
-  box-shadow: 0 1px 4px 0 rgb(220 53 69 / 0.2);
 }
 
 /* ---------- Rendered card content ----------

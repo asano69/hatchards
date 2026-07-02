@@ -3,7 +3,9 @@ import { useSearchParams, useNavigate } from "@solidjs/router";
 import katex from "katex";
 import "katex/dist/contrib/mhchem";
 import hljs from "highlight.js";
-import "../style.css";
+//import "../style.css";
+import Button from "../components/Button";
+
 
 async function fetchState(deck) {
   const res = await fetch(`/api/drill/state?deck=${encodeURIComponent(deck)}`);
@@ -82,6 +84,8 @@ function NoCards(props) {
     </div>
   );
 }
+
+
 function Done(props) {
   const d = props.done;
   return (
@@ -99,25 +103,24 @@ function Done(props) {
         </table>
       </div>
       <div class="shutdown-container">
-        <button class="shutdown-button" onClick={props.onHome}>Home</button>
+        <Button variant="danger" value="Home" onClick={props.onHome} />
       </div>
     </div>
   );
 }
 
-
 function GradeButtons(props) {
   return (
     <Switch>
       <Match when={props.card.answerControls === "binary"}>
-        <input id="forgot" class="btn" type="button" value="Forgot" title="Mark card as forgotten. Shortcut: 1." onClick={() => props.onAction("Forgot")} />
-        <input id="good" class="btn" type="button" value="Good" title="Mark card as remembered well. Shortcut: 3." onClick={() => props.onAction("Good")} />
+        <Button id="forgot" value="Forgot" title="Mark card as forgotten. Shortcut: 1." onClick={() => props.onAction("Forgot")} />
+        <Button id="good" value="Good" title="Mark card as remembered well. Shortcut: 3." onClick={() => props.onAction("Good")} />
       </Match>
       <Match when={true}>
-        <input id="forgot" class="btn" type="button" value="Forgot" title="Forgot. Shortcut: 1." onClick={() => props.onAction("Forgot")} />
-        <input id="hard" class="btn" type="button" value="Hard" title="Hard. Shortcut: 2." onClick={() => props.onAction("Hard")} />
-        <input id="good" class="btn" type="button" value="Good" title="Good. Shortcut: 3." onClick={() => props.onAction("Good")} />
-        <input id="easy" class="btn" type="button" value="Easy" title="Easy. Shortcut: 4." onClick={() => props.onAction("Easy")} />
+        <Button id="forgot" value="Forgot" title="Forgot. Shortcut: 1." onClick={() => props.onAction("Forgot")} />
+        <Button id="hard" value="Hard" title="Hard. Shortcut: 2." onClick={() => props.onAction("Hard")} />
+        <Button id="good" value="Good" title="Good. Shortcut: 3." onClick={() => props.onAction("Good")} />
+        <Button id="easy" value="Easy" title="Easy. Shortcut: 4." onClick={() => props.onAction("Easy")} />
       </Match>
     </Switch>
   );
@@ -137,7 +140,7 @@ function Card(props) {
     <div class="root">
       <div class="header">
         <div class="reset-form">
-          <button class="btn" title="Discard session and return home" onClick={props.onReset}>Reset</button>
+          <Button title="Discard session and return home" value="Reset" onClick={props.onReset} />
         </div>
         <div class="progress-bar">
           <div class="progress-fill" style={{ width: `${card().progressPct}%` }} />
@@ -151,15 +154,14 @@ function Card(props) {
       </div>
 <div class="controls">
         <form onSubmit={(e) => e.preventDefault()}>
-          <input 
-            id="undo" 
-            class="btn" 
-            type="button" 
-            value="Undo" 
+       <Button
+            id="undo"
+            value="Undo"
             title="Undo last action. Shortcut: u."
             disabled={!card().canUndo}
             onClick={() => props.onAction("Undo")}
           />
+
           
           <div class="spacer" />
           
@@ -170,26 +172,22 @@ function Card(props) {
               </div>
             </Match>
             <Match when={true}>
-              <input 
-                id="reveal" 
-                class="btn" 
-                type="button" 
-                value="Reveal" 
-                title="Show the answer. Shortcut: space." 
-                onClick={() => props.onAction("Reveal")} 
+        <Button
+                id="reveal"
+                value="Reveal"
+                title="Show the answer. Shortcut: space."
+                onClick={() => props.onAction("Reveal")}
               />
             </Match>
           </Switch>
           
           <div class="spacer" />
-          
-          <input 
-            id="end" 
-            class="btn" 
-            type="button" 
-            value="End" 
-            title="End the session (changes are saved)" 
-            onClick={() => props.onAction("End")} 
+            <Button
+            id="end"
+            value="End"
+            title="End the session (changes are saved)"
+            onClick={() => props.onAction("End")}
+   
           />
         </form>
       </div>
