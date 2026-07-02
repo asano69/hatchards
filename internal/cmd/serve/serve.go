@@ -124,7 +124,6 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 		return e.Next()
 	})
 
-	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	logrus.WithField("addr", addr).Info("listening")
 	return apis.Serve(app, apis.ServeConfig{
 		HttpAddr:        addr,
