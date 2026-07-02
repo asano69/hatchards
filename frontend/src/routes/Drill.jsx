@@ -1,8 +1,9 @@
-import { createSignal, onMount, onCleanup, createEffect, Switch, Match } from "solid-js";
+import { createSignal, onMount, onCleanup, Switch, Match } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import "../style.css";
 import Button from "../components/Button";
 import Card from "../components/Card";
+
 
 async function fetchState(deck) {
   const res = await fetch(`/api/drill/state?deck=${encodeURIComponent(deck)}`);
@@ -65,7 +66,7 @@ export default function Drill() {
         <Done done={state().done} onHome={() => goHome("ReturnHome")} />
       </Match>
       <Match when={state()?.status === "card"}>
-        <Card card={state().card} onAction={run} onReset={() => goHome("Reset")} />
+        <DrillSession card={state().card} onAction={run} onReset={() => goHome("Reset")} />
       </Match>
     </Switch>
   );
@@ -106,3 +107,78 @@ function Done(props) {
   );
 }
 
+// DrillSession owns everything around a single card that isn't the card
+// itself: the reset button, the progress bar, and the answer/grade controls.
+function DrillSession(props) {
+  const card = () => props.card;
+
+  return (
+    <div class="root">
+      <div class="header">
+        <div class="reset-form">
+          <Button title="Discard session and return home" value="Reset" onClick={props.onReset} />
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style={{ width: `${card().progressPct}%` }} />
+        </div>
+      </div>
+
+      <Card card={card()} />
+
+      <div class="controls">
+        <form onSubmit={(e) => e.preventDefault()}>
+          <Button
+            id="undo"
+            value="Undo"
+            title="Undo last action. Shortcut: u."
+            disabled={!card().canUndo}
+            onClick={() => props.onAction("Undo")}
+          />
+
+          <div class="spacer" />
+
+          <Switch>
+            <Match when={card().revealed}>
+              <div class="grades">
+                <GradeButtons card={card()} onAction={props.onAction} />
+              </div>
+            </Match>
+            <Match when={true}>
+              <Button
+                id="reveal"
+                value="Reveal"
+                title="Show the answer. Shortcut: space."
+                onClick={() => props.onAction("Reveal")}
+              />
+            </Match>
+          </Switch>
+
+          <div class="spacer" />
+          <Button
+            id="end"
+            value="End"
+            title="End the session (changes are saved)"
+            onClick={() => props.onAction("End")}
+          />
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function GradeButtons(props) {
+  return (
+    <Switch>
+      <Match when={props.card.answerControls === "binary"}>
+        <Button id="forgot" value="Forgot" title="Mark card as forgotten. Shortcut: 1." onClick={() => props.onAction("Forgot")} />
+        <Button id="good" value="Good" title="Mark card as remembered well. Shortcut: 3." onClick={() => props.onAction("Good")} />
+      </Match>
+      <Match when={true}>
+        <Button id="forgot" value="Forgot" title="Forgot. Shortcut: 1." onClick={() => props.onAction("Forgot")} />
+        <Button id="hard" value="Hard" title="Hard. Shortcut: 2." onClick={() => props.onAction("Hard")} />
+        <Button id="good" value="Good" title="Good. Shortcut: 3." onClick={() => props.onAction("Good")} />
+        <Button id="easy" value="Easy" title="Easy. Shortcut: 4." onClick={() => props.onAction("Easy")} />
+      </Match>
+    </Switch>
+  );
+}
