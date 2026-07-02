@@ -18,6 +18,7 @@ A plain text-based spaced repetition system. Features:
 > [!NOTE]
 > This project is [hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
 
+
 ## Example
 
 The following JSON file is a valid hashcards deck:
@@ -406,6 +407,22 @@ The `reviews` table has the following schema:
 | `due_date`      | `text not null`       | The date, in the user's local time, when the card is next due, in `YYYY-MM-DD` format.                                             |
 
 Note: "timestamp format" is `YYYY-MM-DDTHH:MM:SS.MMM`, e.g. `2025-10-04T17:09:51.517`.
+
+## オリジナルとの違い
+SPA
+- フラッシュカードはランダムに表示されることに意味があるので、SSRよりもSPAのほうが相性がよい。また画面遷移が高速なSPAのほうがよい。
+
+PocketBase
+- 学習中のカードの状態をSQLコマンドを使うことなく直接見ることができる。
+- バックエンドとフロントエンドを分けてSPAにする場合に相性がよい。
+
+Solid.js
+- 複雑な画面レイアウトにも対応できるようにSolid.jsをつかう。とくに使わない理由はない。
+
+json中間ファイル
+- 元の実装のマークダウンパーサは、pythonスクリプトに移しmd→Json→htmlと、いう変換を重ねることにした。
+- これにより、さまざまな場所に分散したノートをスクリプトによって集約しやすくなる。
+
 
 ## Prior Art
 
