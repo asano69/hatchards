@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "@solidjs/router";
 import katex from "katex";
 import "katex/dist/contrib/mhchem";
 import hljs from "highlight.js";
+import "../style.css";
 
 async function fetchState(deck) {
   const res = await fetch(`/api/drill/state?deck=${encodeURIComponent(deck)}`);
