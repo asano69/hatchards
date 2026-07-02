@@ -180,20 +180,6 @@ $ hashcards orphans delete Cards
 $ hashcards orphans list Cards
 # no output
 ```
-
-### `export`
-
-Export a collection to a JSON file.
-
-```bash
-$ hashcards export [DIRECTORY]
-```
-
-Options:
-
-- `--output=<PATH>`: The path to the output. By default, the export is printed
-  to stdout.
-
 ## Format
 
 This section describes the text format used by hashcards.

@@ -123,7 +123,7 @@ Options:
   -h, --help  Print help
 ```
 
-## hashcards export --help
+## ~~hashcards export --help~~
 ```
 Export a collection
 

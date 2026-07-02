@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/asano69/hashcards/internal/cmd/check"
-	"github.com/asano69/hashcards/internal/cmd/export"
 	"github.com/asano69/hashcards/internal/cmd/orphans"
 	"github.com/asano69/hashcards/internal/cmd/serve"
 	"github.com/asano69/hashcards/internal/cmd/stats"
@@ -33,7 +32,6 @@ func main() {
 	root.AddCommand(
 		checkCmd(),
 		statsCmd(app),
-		exportCmd(app),
 		orphansCmd(app),
 		serveCmd(app),
 		// PocketBase's built-in command for managing admin accounts.
@@ -81,20 +79,6 @@ func statsCmd(app *pocketbase.PocketBase) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return stats.Run(app, args[0], os.Stdout)
-		},
-	}
-}
-
-// -------------------------------------------------------------------------
-// export
-// -------------------------------------------------------------------------
-func exportCmd(app *pocketbase.PocketBase) *cobra.Command {
-	return &cobra.Command{
-		Use:   "export",
-		Short: "Export review history as JSON",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return export.Run(app, os.Stdout)
 		},
 	}
 }
