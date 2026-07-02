@@ -3,7 +3,8 @@ import { useSearchParams, useNavigate } from "@solidjs/router";
 import "../style.css";
 import Button from "../components/Button";
 import Card from "../components/Card";
-
+import Done from "./Done";
+import NoCards from "./NoCards";
 
 async function fetchState(deck) {
   const res = await fetch(`/api/drill/state?deck=${encodeURIComponent(deck)}`);
@@ -69,41 +70,6 @@ export default function Drill() {
         <DrillSession card={state().card} onAction={run} onReset={() => goHome("Reset")} />
       </Match>
     </Switch>
-  );
-}
-
-function NoCards(props) {
-  return (
-    <div class="finished">
-      <h1>No cards due today.</h1>
-      <div class="shutdown-container">
-        <button onClick={props.onHome}>Home</button>
-      </div>
-    </div>
-  );
-}
-
-
-function Done(props) {
-  const d = props.done;
-  return (
-    <div class="finished">
-      <h1>Session Completed 🎉</h1>
-      <div class="summary">Reviewed {d.reviewed} cards in {d.durationSec} seconds.</div>
-      <h2>Session Stats</h2>
-      <div class="stats">
-        <table>
-          <tbody>
-            <tr><td class="key">Total Cards</td><td class="val">{d.total}</td></tr>
-            <tr><td class="key">Cards Reviewed</td><td class="val">{d.reviewed}</td></tr>
-            <tr><td class="key">Duration (seconds)</td><td class="val">{d.durationSec}</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="shutdown-container">
-        <Button variant="danger" value="Home" onClick={props.onHome} />
-      </div>
-    </div>
   );
 }
 
