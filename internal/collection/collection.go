@@ -4,6 +4,7 @@
 package collection
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -165,23 +166,16 @@ func walkDecks(root string) ([]types.Card, error) {
 }
 
 // syncDB ensures the database reflects the current set of cards on disk.
-// New cards are inserted; cards no longer on disk are left untouched
-// and can be removed explicitly with the "orphans delete" command.
+// Every card is inserted unconditionally; InsertCard's unique constraint on
+// card_hash rejects cards that already exist, and that specific error
+// (ErrDuplicateCard) is ignored here. Cards no longer on disk are left
+// untouched and can be removed explicitly with the "orphans delete" command.
 func syncDB(cards []types.Card, database *db.Database) error {
-	inDB, err := database.CardHashes()
-	if err != nil {
-		return err
-	}
-
 	now := types.Now()
-
 	for _, card := range cards {
-		if _, exists := inDB[card.Hash()]; !exists {
-			if err := database.InsertCard(card.Hash(), now); err != nil {
-				return err
-			}
+		if err := database.InsertCard(card.Hash(), now); err != nil && !errors.Is(err, db.ErrDuplicateCard) {
+			return err
 		}
 	}
-
 	return nil
 }

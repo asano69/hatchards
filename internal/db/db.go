@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/asano69/hashcards/internal/errs"
 	"github.com/asano69/hashcards/internal/fsrs"
@@ -210,10 +211,26 @@ func (db *Database) findCardRecord(cardHash types.CardHash) (*core.Record, error
 	return record, nil
 }
 
+// ErrDuplicateCard is returned by InsertCard when a card with the same hash
+// already exists. Callers that want to insert-or-skip (e.g. syncDB) can
+// check for this specific error with errors.Is instead of pre-querying
+// existing hashes.
+var ErrDuplicateCard = errors.New("duplicate card hash")
+
+// isDuplicateCardHash reports whether err represents a unique-index
+// violation on the cards collection's card_hash field. Matching by
+// substring keeps this resilient to the exact validation error type
+// PocketBase returns, which is not part of its stable public API.
+func isDuplicateCardHash(err error) bool {
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "card_hash") &&
+		(strings.Contains(msg, "unique") || strings.Contains(msg, "already exists"))
+}
+
 // InsertCard adds a new card record. If a card with the same hash already
 // exists, the "cards" collection's unique index on card_hash rejects the
-// save and that failure is surfaced directly, avoiding a separate
-// existence-check query.
+// save; that specific failure is reported as ErrDuplicateCard so callers
+// like syncDB can skip it without a separate existence-check query.
 func (db *Database) InsertCard(cardHash types.CardHash, addedAt types.Timestamp) error {
 	collection, err := db.app.FindCollectionByNameOrId("cards")
 	if err != nil {
@@ -224,6 +241,9 @@ func (db *Database) InsertCard(cardHash types.CardHash, addedAt types.Timestamp)
 	record.Set("added_at", addedAt.String())
 	record.Set("review_count", 0)
 	if err := db.app.Save(record); err != nil {
+		if isDuplicateCardHash(err) {
+			return ErrDuplicateCard
+		}
 		return errs.Newf("insert card: %v", err)
 	}
 	return nil
