@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "@solidjs/router";
 import katex from "katex";
 import "katex/dist/contrib/mhchem";
 import hljs from "highlight.js";
-//import "../style.css";
+import "../style.css";
 import Button from "../components/Button";
 
 

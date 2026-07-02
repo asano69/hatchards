@@ -3,13 +3,9 @@ BINARY := hashcards
 frontend-deps:
 	cd frontend && pnpm install
 
-.PHONY: build-frontend
-build-frontend: frontend-deps
+.PHONY: frontend-build
+frontend-build:
 	cd frontend && pnpm run build
-
-.PHONY: build
-build: build-frontend
-	go build -o $(BINARY) ./cmd/$(BINARY)
 
 
 kill-ports:
@@ -20,13 +16,20 @@ server: kill-ports
 	cd frontend && pnpm watch &
 	air &
 
-.PHONY: prod
-prod: kill-ports build
-	./$(BINARY) serve --config=config.toml
 
 init: build kill-ports
 	#./hashcards migrate up --dir=pb_data
 	./$(BINARY) superuser upsert admin@mail.internal password --dir=pb_data
+
+
+
+.PHONY: backend
+backend:
+	./$(BINARY) serve --config=config.toml
+
+frontend-dev:
+	cd frontend && pnpm dev
+
 
 # ----------
 .PHONY: frontend
