@@ -4,12 +4,8 @@
 /target
 /result
 /data/
-/pb_data/
 
-
-/node_modules
-
-/frontend/node_modules
-/internal/assets/dist
-
+pb_data/
+node_modules/
+dist/
 tmp/
