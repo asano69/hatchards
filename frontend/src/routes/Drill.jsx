@@ -73,12 +73,11 @@ function NoCards(props) {
     <div class="finished">
       <h1>No cards due today.</h1>
       <div class="shutdown-container">
-        <button class="btn btn-primary" onClick={props.onHome}>Home</button>
+        <button onClick={props.onHome}>Home</button>
       </div>
     </div>
   );
 }
-
 function Done(props) {
   const d = props.done;
   return (
@@ -96,11 +95,12 @@ function Done(props) {
         </table>
       </div>
       <div class="shutdown-container">
-        <button class="btn btn-primary" onClick={props.onHome}>Home</button>
+        <button class="shutdown-button" onClick={props.onHome}>Home</button>
       </div>
     </div>
   );
 }
+
 
 function GradeButtons(props) {
   return (
