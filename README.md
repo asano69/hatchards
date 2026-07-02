@@ -1,4 +1,7 @@
 # hashcards
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hashcards)
+
 <img src="frontend/public/favicon.svg" width="100" align="right" />
 A plain text-based spaced repetition system. Features:
 
@@ -252,8 +255,8 @@ json中間ファイル
 
 ---
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hashcards)
----
+
+
 
 To learn how to write good flashcards, read [Effective Spaced Repetition][esr].
 => https://gutenberg.org/cache/epub/47748/pg47748-images.html  
