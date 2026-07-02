@@ -16,7 +16,7 @@ A plain text-based spaced repetition system. Features:
   minimizing time spent reviewing.
 
 > [!NOTE]
-> This project is [hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
+> This project is [eudoxia0/hashcards](https://github.com/eudoxia0/hashcards)'s Go fork.
 
 
 ## Example
