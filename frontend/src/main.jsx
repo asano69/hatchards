@@ -12,13 +12,13 @@ import "./styles/style.css";
 import "katex/dist/katex.min.css";
 import "highlight.js/styles/github.css";
 
-import Sessions from "./routes/Sessions";
+import Home from "./routes/Home";
 import Drill from "./routes/Drill";
 
 render(
   () => (
     <Router>
-      <Route path="/" component={Sessions} />
+      <Route path="/" component={Home} />
       <Route path="/drill" component={Drill} />
     </Router>
   ),

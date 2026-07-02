@@ -25,7 +25,7 @@ function SessionItem(props) {
   );
 }
 
-export default function Sessions() {
+export default function Home() {
   const [sessions] = createResource(fetchSessions);
 
   return (
