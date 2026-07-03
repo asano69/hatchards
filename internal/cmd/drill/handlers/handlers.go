@@ -103,6 +103,7 @@ func BurySiblings(due []collection.DueCard) []collection.DueCard {
 // Manager dispatches drill state/action requests to the right per-deck
 // handler. "" is the key for the "all decks" session.
 type Manager struct {
+	mu       sync.RWMutex
 	sessions map[string]*handler
 }
 
@@ -154,14 +155,29 @@ func (m *Manager) AddSession(
 		burySiblingsOn: burySiblings,
 		fsrsCfg:        fsrsCfg,
 	}
+
+	m.mu.Lock()
 	m.sessions[deckKey] = h
+	m.mu.Unlock()
 
 	return nil
 }
 
 func (m *Manager) get(deckKey string) (*handler, bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	h, ok := m.sessions[deckKey]
 	return h, ok
+}
+
+// Has reports whether a session is already registered for deckKey. It lets
+// callers (e.g. the rescan handler) add sessions for newly discovered decks
+// without disturbing decks that are already registered.
+func (m *Manager) Has(deckKey string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	_, ok := m.sessions[deckKey]
+	return ok
 }
 
 // RegisterAPI attaches the drill API and the shared media route directly to

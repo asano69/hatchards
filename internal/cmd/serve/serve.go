@@ -80,6 +80,38 @@ func deckSessions(col *collection.Collection) []deckSession {
 	return sessions
 }
 
+// registerNewSessions registers a drill session for every deck in decks that
+// does not already have one in manager, so an already-running deck's
+// in-progress session is never reset. It returns the names of the decks that
+// were newly registered.
+func registerNewSessions(
+	manager *handlers.Manager,
+	decks []deckSession,
+	col *collection.Collection,
+	database *db.Database,
+	fsrsCfg fsrs.FSRSConfig,
+) ([]string, error) {
+	var added []string
+	for _, ds := range decks {
+		if manager.Has(ds.Path) {
+			continue
+		}
+		var deckFilter *string
+		if ds.Deck != "" {
+			df := ds.Deck
+			deckFilter = &df
+		}
+		if err := manager.AddSession(
+			ds.Path, col, database, "full",
+			nil, nil, deckFilter, true, fsrsCfg,
+		); err != nil {
+			return nil, fmt.Errorf("setup session %q: %w", ds.Name, err)
+		}
+		added = append(added, ds.Name)
+	}
+	return added, nil
+}
+
 // Run opens the database and collection once, registers all drill routes, then
 // starts listening. The database and collection are shared across all sessions.
 func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
@@ -103,18 +135,8 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 	// sessions share the same defaults (no card limits, full answer
 	// controls, sibling burial on).
 	manager := handlers.NewManager()
-	for _, ds := range deckSessions(col) {
-		var deckFilter *string
-		if ds.Deck != "" {
-			df := ds.Deck
-			deckFilter = &df
-		}
-		if err := manager.AddSession(
-			ds.Path, col, database, "full",
-			nil, nil, deckFilter, true, fsrsCfg,
-		); err != nil {
-			return fmt.Errorf("setup session %q: %w", ds.Name, err)
-		}
+	if _, err := registerNewSessions(manager, deckSessions(col), col, database, fsrsCfg); err != nil {
+		return err
 	}
 
 	// assetsFS exposes just the "assets/" subdirectory that Vite's default
@@ -137,7 +159,22 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 			return re.JSON(http.StatusOK, buildSessionList(freshCol, database))
 		})
 
-		handlers.RegisterAPI(e.Router, manager, cfg.Data.Root)
+		handlers.RegisterAPI(e.Router, manager, cfg.Data.Root) // TODO What is this?
+
+		// POST /api/rescan re-scans the deck directory and registers a
+		// session for any deck added since the server started, without
+		// requiring a restart. Existing sessions are left untouched.
+		e.Router.POST("/api/rescan", func(re *core.RequestEvent) error {
+			freshCol, err := collection.Load(cfg.Data.Root, database)
+			if err != nil {
+				return re.BadRequestError("reload collection failed", err)
+			}
+			added, err := registerNewSessions(manager, deckSessions(freshCol), freshCol, database, fsrsCfg)
+			if err != nil {
+				return re.BadRequestError("register new sessions failed", err)
+			}
+			return re.JSON(http.StatusOK, map[string]any{"added": added})
+		})
 
 		e.Router.GET("/assets/{path...}", apis.Static(assetsFS, false))
 
