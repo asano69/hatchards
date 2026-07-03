@@ -22,7 +22,7 @@ kill-ports:
 server: kill-ports build
 	#./hashcards migrate up --dir=pb_data
 	./$(BINARY) superuser upsert admin@mail.internal password --dir=pb_data
-	./$(BINARY) serve --config=config.toml
+	./$(BINARY) serve
 
 # --------------
 .PHONY: clean

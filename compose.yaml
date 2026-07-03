@@ -5,8 +5,13 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./config.toml:/hashcards/config.toml:ro
       - ./cards:/hashcards/cards
       - ./pb_data:/hashcards/data
     environment:
       - TZ=Asia/Tokyo
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3000
+      - DATA_ROOT=./cards
+      - FSRS_TARGET_RECALL=0.9
+      - FSRS_MIN_INTERVAL=1.0
+      - FSRS_MAX_INTERVAL=256.0

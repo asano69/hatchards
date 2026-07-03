@@ -122,21 +122,18 @@ func orphansDeleteCmd(app *pocketbase.PocketBase) *cobra.Command {
 // -------------------------------------------------------------------------
 // serve
 // -------------------------------------------------------------------------
+
 func serveCmd(app *pocketbase.PocketBase) *cobra.Command {
-	var configPath string
-	cmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "serve",
 		Short: "Start the web server for all configured drill sessions",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load(configPath)
+			cfg, err := config.Load()
 			if err != nil {
-				return fmt.Errorf("load config %s: %w", configPath, err)
+				return fmt.Errorf("load config: %w", err)
 			}
 			return serve.Run(app, cfg)
 		},
 	}
-	cmd.Flags().StringVar(&configPath, "config", "config.toml",
-		"path to the TOML config file")
-	return cmd
 }

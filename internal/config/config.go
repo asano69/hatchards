@@ -1,69 +1,130 @@
-// Package config loads the TOML configuration for hashcards serve.
+// Package config loads the configuration for hashcards serve from
+// environment variables.
 package config
 
 import (
-	"github.com/BurntSushi/toml"
+	"os"
+	"strconv"
+
+	"github.com/asano69/hashcards/internal/errs"
 )
 
 // ServerConfig holds HTTP server settings.
 type ServerConfig struct {
-	Host string `toml:"host"`
-	Port int    `toml:"port"`
+	Host string
+	Port int
 }
 
 // DataConfig holds data storage settings.
 type DataConfig struct {
-	Root string `toml:"root"`
+	Root string
 }
 
 // FSRSSettings holds FSRS scheduling tuning parameters.
 type FSRSSettings struct {
-	TargetRecall float64 `toml:"target_recall"`
-	MinInterval  float64 `toml:"min_interval"`
-	MaxInterval  float64 `toml:"max_interval"`
+	TargetRecall float64
+	MinInterval  float64
+	MaxInterval  float64
 }
 
-// Config is the top-level structure parsed from the TOML file.
+// Config is the top-level configuration, loaded from environment variables.
 //
-// Drill sessions are no longer configured here: "serve" derives one session
+// Drill sessions are not configured here: "serve" derives one session
 // per deck (plus a combined "All Decks" session) directly from the decks
 // found under Data.Root. See internal/cmd/serve.
 type Config struct {
-	Server ServerConfig `toml:"server"`
-	Data   DataConfig   `toml:"data"`
-	FSRS   FSRSSettings `toml:"fsrs"`
+	Server ServerConfig
+	Data   DataConfig
+	FSRS   FSRSSettings
 }
 
-// Load reads and parses the TOML config file at path, applying defaults.
-func Load(path string) (*Config, error) {
-	var cfg Config
-	if _, err := toml.DecodeFile(path, &cfg); err != nil {
+// Load reads configuration from environment variables, applying defaults
+// for any variable that is unset.
+//
+// Recognised variables:
+//
+//	SERVER_HOST         default "0.0.0.0"
+//	SERVER_PORT         default 3000
+//	DATA_ROOT           default "."
+//	FSRS_TARGET_RECALL  default 0.9
+//	FSRS_MIN_INTERVAL   default 1.0
+//	FSRS_MAX_INTERVAL   default 256.0
+func Load() (*Config, error) {
+	cfg := &Config{
+		Server: ServerConfig{
+			Host: envString("SERVER_HOST", "0.0.0.0"),
+			Port: 3000,
+		},
+		Data: DataConfig{
+			Root: envString("DATA_ROOT", "."),
+		},
+		FSRS: FSRSSettings{
+			TargetRecall: 0.9,
+			MinInterval:  1.0,
+			MaxInterval:  256.0,
+		},
+	}
+
+	port, err := envInt("SERVER_PORT", cfg.Server.Port)
+	if err != nil {
 		return nil, err
 	}
+	cfg.Server.Port = port
 
-	// Server defaults.
-	if cfg.Server.Host == "" {
-		cfg.Server.Host = "0.0.0.0"
+	targetRecall, err := envFloat("FSRS_TARGET_RECALL", cfg.FSRS.TargetRecall)
+	if err != nil {
+		return nil, err
 	}
-	if cfg.Server.Port == 0 {
-		cfg.Server.Port = 3000
-	}
+	cfg.FSRS.TargetRecall = targetRecall
 
-	// Data defaults.
-	if cfg.Data.Root == "" {
-		cfg.Data.Root = "."
+	minInterval, err := envFloat("FSRS_MIN_INTERVAL", cfg.FSRS.MinInterval)
+	if err != nil {
+		return nil, err
 	}
+	cfg.FSRS.MinInterval = minInterval
 
-	// FSRS defaults.
-	if cfg.FSRS.TargetRecall == 0 {
-		cfg.FSRS.TargetRecall = 0.9
+	maxInterval, err := envFloat("FSRS_MAX_INTERVAL", cfg.FSRS.MaxInterval)
+	if err != nil {
+		return nil, err
 	}
-	if cfg.FSRS.MinInterval == 0 {
-		cfg.FSRS.MinInterval = 1.0
-	}
-	if cfg.FSRS.MaxInterval == 0 {
-		cfg.FSRS.MaxInterval = 256.0
-	}
+	cfg.FSRS.MaxInterval = maxInterval
 
-	return &cfg, nil
+	return cfg, nil
+}
+
+// envString returns the value of the environment variable key, or fallback
+// if it is unset or empty.
+func envString(key, fallback string) string {
+	if v, ok := os.LookupEnv(key); ok && v != "" {
+		return v
+	}
+	return fallback
+}
+
+// envInt returns the integer value of the environment variable key, or
+// fallback if it is unset.
+func envInt(key string, fallback int) (int, error) {
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
+		return fallback, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, errs.Newf("invalid %s: %v", key, err)
+	}
+	return n, nil
+}
+
+// envFloat returns the float64 value of the environment variable key, or
+// fallback if it is unset.
+func envFloat(key string, fallback float64) (float64, error) {
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
+		return fallback, nil
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return 0, errs.Newf("invalid %s: %v", key, err)
+	}
+	return f, nil
 }
