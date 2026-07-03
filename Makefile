@@ -43,6 +43,9 @@ dev-back: clean
 test:
 	go test ./...
 
+.PHONY: card
+card:
+	python3 ./scripts/card_to_json.py ~/Documents/obsidian/computer cards
 
 # -----------
 
