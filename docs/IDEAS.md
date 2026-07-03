@@ -1,4 +1,4 @@
-# Card Stages
+## Card Stages
 
 Like in Anki. New, learning, mature, with a state machine.
 
@@ -9,7 +9,14 @@ See:
 
 - <https://docs.ankiweb.net/getting-started.html#card-states>
 
-# Term-Definition Cards
+
+## 可視性
+
+- 過去から現在のデッキごとの安定性のグラフ
+- 現在の、カードステータス（期限切れ、新規カード、期日カード）
+- 未来の、確定された期限
+
+## Term-Definition Cards
 
 A shorthand. Writing:
 
@@ -28,14 +35,14 @@ Q: Term for: The process of turning loose sediment into rock.
 A: lithification
 ```
 
-# Preview Command
+## Preview Command
 
 Right now the only way to see how a card renders is to run the `drill` command
 and hope you see it first. Instead, there should be a `preview` command that
 opens a web interface that lets you navigate the flashcards, either all of them,
 or one deck at a time, and see how they render.
 
-# Jitter
+## Jitter
 
 Add random noise to review intervals, to diffuse the peaks.
 
