@@ -25,7 +25,7 @@ max_interval = 256.0
 title = "All"
 
 [[session]]
-title = "Math"
+title = "Mathematics"
 deck = "Math"
 
 [[session]]
