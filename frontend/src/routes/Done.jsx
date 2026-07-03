@@ -28,7 +28,7 @@ export default function Done(props) {
           </tbody>
         </table>
       </div>
-      <div class="shutdown-container">
+      <div class="mt-12 text-center">
         <Button variant="danger" value="Home" onClick={props.onHome} />
       </div>
     </div>

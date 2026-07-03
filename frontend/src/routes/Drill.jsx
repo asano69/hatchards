@@ -78,7 +78,7 @@ export default function Drill() {
 function DrillSession(props) {
   const card = () => props.card;
 return (
-    <div class="root">
+    <div class="flex h-screen w-screen flex-col">
       <div class="flex flex-row items-center justify-center p-8 bg-[var(--color-panel)] border-b border-[var(--color-border)]">
         <div class="reset-form">
           <Button title="Discard session and return home" value="Reset" onClick={props.onReset} />

@@ -55,18 +55,6 @@
   }
 }
 
-/* ---------- Drill screen layout ---------- */
-
-.root {
-  @apply flex h-screen w-screen flex-col;
-}
-.shutdown-container {
-  @apply mt-12 text-center;
-}
-.shutdown-container form {
-  @apply inline-block;
-}
-
 /* ---------- Rendered card content ----------
  * Cards are raw HTML strings produced by goldmark on the server and
  * injected via innerHTML, so this content cannot carry Tailwind
