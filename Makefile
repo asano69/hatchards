@@ -30,12 +30,12 @@ server: kill-ports build
 
 # port: 3001
 .PHONY: dev-front
-dev-front: clean
+dev-front: clean kill-ports
 	npx concurrently -n "frontend,backend" -c "blue,green" "cd frontend && pnpm dev" "air"
 
 # port: 3000
 .PHONY: dev-back
-dev-back: clean
+dev-back: clean kill-ports
 	npx concurrently -n "frontend,backend" -c "blue,green" "cd frontend && pnpm watch" "air"
 
 

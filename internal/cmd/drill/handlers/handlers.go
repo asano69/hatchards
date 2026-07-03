@@ -13,7 +13,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -156,17 +155,6 @@ func (m *Manager) AddSession(
 		fsrsCfg:        fsrsCfg,
 	}
 	m.sessions[deckKey] = h
-
-	deckLabel := "all decks"
-	if deckFilter != nil {
-		deckLabel = fmt.Sprintf("deck=%q", *deckFilter)
-	}
-
-	logrus.WithFields(logrus.Fields{
-		"key":   deckKey,
-		"deck":  deckLabel,
-		"cards": len(due),
-	}).Info("drill session created")
 
 	return nil
 }
