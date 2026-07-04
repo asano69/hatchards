@@ -7,6 +7,7 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	pbcmd "github.com/pocketbase/pocketbase/cmd"
+	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/spf13/cobra"
 
 	"github.com/asano69/hashcards/internal/cmd/check"
@@ -17,12 +18,15 @@ import (
 )
 
 func main() {
-	// A single PocketBase instance is shared by every subcommand. Its data
-	// directory is controlled by the standard "--dir" flag (registered
-	// automatically by NewWithConfig), and it is bootstrapped exactly once,
-	// before any subcommand's RunE, via the PersistentPreRunE hook that
-	// PocketBase installs on RootCmd.
 	app := pocketbase.NewWithConfig(pocketbase.Config{HideStartBanner: true})
+
+	// Registers "hashcards migrate up/down/create/collections/history-sync"
+	// for manual or CI-driven schema management. Automigrate is off because
+	// the schema is defined purely in Go migration files (internal/migrations),
+	// not edited through the PocketBase dashboard.
+	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{
+		Automigrate: false,
+	})
 
 	root := app.RootCmd
 	root.Use = "hashcards"
@@ -35,9 +39,6 @@ func main() {
 		statsCmd(app),
 		orphansCmd(app),
 		serveCmd(app),
-		// PocketBase's built-in command for managing admin accounts.
-		// It shares the same app, so it always targets the same data
-		// directory as every other command.
 		pbcmd.NewSuperuserCommand(app),
 	)
 

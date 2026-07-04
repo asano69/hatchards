@@ -16,6 +16,12 @@ import (
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/migrate"
+
+	// Blank-imported for its init() side effect: registering the app's
+	// schema migrations into core.AppMigrations. newDatabase below applies
+	// any migration that hasn't run yet via migrate.Runner.
+	_ "github.com/asano69/hashcards/internal/migrations"
 )
 
 type ReviewRecord struct {
@@ -65,13 +71,21 @@ func New(app *pocketbase.PocketBase) (*Database, error) {
 	return newDatabase(app)
 }
 
-// newDatabase wraps app in a Database and ensures the hashcards schema
-// exists in it.
+// newDatabase wraps app in a Database and applies any pending schema
+// migrations (see internal/migrations) that haven't run yet. PocketBase
+// tracks which migrations have already applied in its own "_migrations"
+// table, so calling this on every startup (including in tests, via
+// OpenScratch) is safe and idempotent.
 func newDatabase(app *pocketbase.PocketBase) (*Database, error) {
-	db := &Database{app: app}
-	if err := db.ensureSchema(); err != nil {
-		return nil, err
+	runner, err := migrate.NewRunner(app.DB(), core.AppMigrations)
+	if err != nil {
+		return nil, errs.Newf("create migration runner: %v", err)
 	}
+	if err := runner.Up(); err != nil {
+		return nil, errs.Newf("run migrations: %v", err)
+	}
+
+	db := &Database{app: app}
 	db.registerHooks()
 	return db, nil
 }
@@ -124,64 +138,6 @@ func (db *Database) syncCardFromReview(e *core.RecordEvent) error {
 
 func (db *Database) Close() error                { return db.app.ResetBootstrapState() }
 func (db *Database) App() *pocketbase.PocketBase { return db.app }
-
-func (db *Database) ensureSchema() error {
-	if err := db.ensureCollection("cards", func(c *core.Collection) {
-		c.Fields.Add(
-			&core.TextField{Name: "card_hash", Required: true, Presentable: true},
-			&core.TextField{Name: "added_at", Required: true},
-			&core.TextField{Name: "last_reviewed_at"},
-			&core.NumberField{Name: "stability"},
-			&core.NumberField{Name: "difficulty"},
-			&core.NumberField{Name: "interval_raw"},
-			&core.NumberField{Name: "interval_days", OnlyInt: true},
-			&core.TextField{Name: "due_date"},
-			&core.NumberField{Name: "review_count", OnlyInt: true},
-		)
-		c.AddIndex("idx_cards_card_hash_unique", true, "card_hash", "")
-	}); err != nil {
-		return err
-	}
-	if err := db.ensureCollection("sessions", func(c *core.Collection) {
-		c.Fields.Add(
-			&core.TextField{Name: "started_at", Required: true},
-			&core.TextField{Name: "ended_at", Required: true},
-		)
-		c.AddIndex("idx_sessions_started_at", false, "started_at", "")
-	}); err != nil {
-		return err
-	}
-	if err := db.ensureCollection("reviews", func(c *core.Collection) {
-		c.Fields.Add(
-			&core.TextField{Name: "session_id", Required: true},
-			&core.TextField{Name: "card_hash", Required: true},
-			&core.TextField{Name: "reviewed_at", Required: true},
-			&core.TextField{Name: "grade", Required: true},
-			&core.NumberField{Name: "stability", Required: true},
-			&core.NumberField{Name: "difficulty", Required: true},
-			&core.NumberField{Name: "interval_raw", Required: true},
-			&core.NumberField{Name: "interval_days", OnlyInt: true, Required: true},
-			&core.TextField{Name: "due_date", Required: true},
-		)
-		c.AddIndex("idx_reviews_session_id", false, "session_id", "")
-		c.AddIndex("idx_reviews_card_hash", false, "card_hash", "")
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (db *Database) ensureCollection(name string, configure func(*core.Collection)) error {
-	if _, err := db.app.FindCollectionByNameOrId(name); err == nil {
-		return nil
-	}
-	c := core.NewBaseCollection(name)
-	configure(c)
-	if err := db.app.Save(c); err != nil {
-		return errs.Newf("ensure PocketBase collection %q: %v", name, err)
-	}
-	return nil
-}
 
 // findCardRecord looks up the "cards" record with the given hash.
 // It returns (nil, nil) when no such card exists.
