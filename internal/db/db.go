@@ -16,11 +16,7 @@ import (
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/tools/migrate"
 
-	// Blank-imported for its init() side effect: registering the app's
-	// schema migrations into core.AppMigrations. newDatabase below applies
-	// any migration that hasn't run yet via migrate.Runner.
 	_ "github.com/asano69/hashcards/internal/migrations"
 )
 
@@ -71,17 +67,15 @@ func New(app *pocketbase.PocketBase) (*Database, error) {
 	return newDatabase(app)
 }
 
-// newDatabase wraps app in a Database and applies any pending schema
-// migrations (see internal/migrations) that haven't run yet. PocketBase
-// tracks which migrations have already applied in its own "_migrations"
-// table, so calling this on every startup (including in tests, via
-// OpenScratch) is safe and idempotent.
+// newDatabase wraps app in a Database and applies any pending app-level
+// schema migrations (see internal/migrations). System migrations
+// (_collections, _params, ...) already ran inside app.Bootstrap(), so only
+// the user-defined AppMigrations need to be applied here. Calling this on
+// every startup (including in tests, via OpenScratch) is safe and
+// idempotent — RunAppMigrations skips migrations already recorded in the
+// _migrations table.
 func newDatabase(app *pocketbase.PocketBase) (*Database, error) {
-	runner, err := migrate.NewRunner(app.DB(), core.AppMigrations)
-	if err != nil {
-		return nil, errs.Newf("create migration runner: %v", err)
-	}
-	if err := runner.Up(); err != nil {
+	if err := app.RunAppMigrations(); err != nil {
 		return nil, errs.Newf("run migrations: %v", err)
 	}
 
