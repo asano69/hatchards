@@ -7,7 +7,6 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	pbcmd "github.com/pocketbase/pocketbase/cmd"
-	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/spf13/cobra"
 
 	"github.com/asano69/hashcards/internal/cmd/check"
@@ -16,7 +15,7 @@ import (
 	"github.com/asano69/hashcards/internal/cmd/stats"
 	"github.com/asano69/hashcards/internal/config"
 
-	_ "github.com/asano69/hashcards/migrations"
+	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 )
 
 func main() {

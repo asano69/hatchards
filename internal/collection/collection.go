@@ -165,15 +165,46 @@ func walkDecks(root string) ([]types.Card, error) {
 	return deduped, nil
 }
 
+// cardBody is the JSON shape cached into the "files" collection's card_body
+// field, so dashboard users can see a card's raw content.
+type cardBody struct {
+	Kind     string `json:"kind"`
+	Question string `json:"question,omitempty"`
+	Answer   string `json:"answer,omitempty"`
+	Text     string `json:"text,omitempty"`
+	Start    int    `json:"start,omitempty"`
+	End      int    `json:"end,omitempty"`
+}
+
+func buildCardBody(c types.Card) cardBody {
+	cc := c.Content()
+	kind := "basic"
+	if cc.Kind() == types.CardTypeCloze {
+		kind = "cloze"
+	}
+	return cardBody{
+		Kind:     kind,
+		Question: cc.Question,
+		Answer:   cc.Answer,
+		Text:     cc.Text,
+		Start:    cc.Start,
+		End:      cc.End,
+	}
+}
+
 // syncDB ensures the database reflects the current set of cards on disk.
 // Every card is inserted unconditionally; InsertCard's unique constraint on
 // card_hash rejects cards that already exist, and that specific error
-// (ErrDuplicateCard) is ignored here. Cards no longer on disk are left
-// untouched and can be removed explicitly with the "orphans delete" command.
+// (ErrDuplicateCard) is ignored here. The "files" cache record is refreshed
+// on every call, since deck_name isn't part of the content hash and can
+// change even when the card itself hasn't.
 func syncDB(cards []types.Card, database *db.Database) error {
 	now := types.Now()
 	for _, card := range cards {
 		if err := database.InsertCard(card.Hash(), now); err != nil && !errors.Is(err, db.ErrDuplicateCard) {
+			return err
+		}
+		if err := database.SyncFileCache(card.Hash(), card.DeckName(), buildCardBody(card)); err != nil {
 			return err
 		}
 	}

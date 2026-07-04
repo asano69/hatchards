@@ -6,16 +6,18 @@ package db
 import (
 	"database/sql"
 
+	"encoding/json"
 	"errors"
-	"os"
-	"strings"
-
 	"github.com/asano69/hashcards/internal/errs"
 	"github.com/asano69/hashcards/internal/fsrs"
 	"github.com/asano69/hashcards/internal/types"
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"os"
+	"strings"
+
+	_ "github.com/asano69/hashcards/migrations"
 )
 
 type ReviewRecord struct {
@@ -447,4 +449,45 @@ func (db *Database) GetReviewsForSession(sessionID string) ([]ReviewRow, error) 
 		})
 	}
 	return out, nil
+}
+
+// SyncFileCache upserts a "files" cache record for a card, storing its deck
+// name and raw content as JSON. This lets dashboard users inspect card
+// content directly, without opening the source deck files.
+func (db *Database) SyncFileCache(cardHash types.CardHash, deckName string, body any) error {
+	cardRecord, err := db.findCardRecord(cardHash)
+	if err != nil {
+		return errs.Newf("sync file cache: find card: %v", err)
+	}
+	if cardRecord == nil {
+		return errs.Newf("sync file cache: card not found: %s", cardHash)
+	}
+
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		return errs.Newf("sync file cache: marshal card body: %v", err)
+	}
+
+	record, err := db.app.FindFirstRecordByFilter(
+		"files", "relation = {:card}", dbx.Params{"card": cardRecord.Id},
+	)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return errs.Newf("sync file cache: find existing record: %v", err)
+		}
+		collection, err := db.app.FindCollectionByNameOrId("files")
+		if err != nil {
+			return errs.Newf("sync file cache: find files collection: %v", err)
+		}
+		record = core.NewRecord(collection)
+		record.Set("relation", cardRecord.Id)
+	}
+
+	record.Set("deck_name", deckName)
+	record.Set("card_body", string(bodyJSON))
+
+	if err := db.app.Save(record); err != nil {
+		return errs.Newf("sync file cache: save: %v", err)
+	}
+	return nil
 }

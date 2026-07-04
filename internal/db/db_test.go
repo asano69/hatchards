@@ -5,8 +5,6 @@ import (
 
 	"github.com/asano69/hashcards/internal/fsrs"
 	"github.com/asano69/hashcards/internal/types"
-
-	_ "github.com/asano69/hashcards/migrations"
 )
 
 // openMemory opens an in-memory database for testing.
