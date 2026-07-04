@@ -5,6 +5,8 @@ package cache
 
 import (
 	"fmt"
+	"runtime"
+	"sync"
 
 	"github.com/asano69/hashcards/internal/collection"
 	"github.com/asano69/hashcards/internal/markdown"
@@ -22,43 +24,110 @@ type Cache struct {
 	entries map[types.CardHash]Entry
 }
 
+// cacheJob is one unit of work: render a single due card into an Entry.
+type cacheJob struct {
+	card collection.DueCard
+}
+
+// cacheResult pairs a card hash with its rendered entry, produced by a
+// worker goroutine and consumed by the single goroutine that owns the
+// entries map (so no locking is needed around the map itself).
+type cacheResult struct {
+	hash  types.CardHash
+	entry Entry
+}
+
 // Build renders the front and back HTML for every due card and stores the
-// results in a new Cache.
+// results in a new Cache. Rendering one card is a pure function of that
+// card's content, independent of every other card, so the work is fanned
+// out across a small worker pool instead of running strictly sequentially.
+// This mainly matters for large due lists, where session start/reset used
+// to block on rendering every card one at a time.
 // fileMountBase is the URL prefix for the /file/ handler (e.g. "/drill/geo").
 func Build(due []collection.DueCard, fileMountBase string) *Cache {
 	c := &Cache{entries: make(map[types.CardHash]Entry, len(due))}
-	for _, dc := range due {
-		card := dc.Card
-		deckFilePath := card.FilePath()
+	if len(due) == 0 {
+		return c
+	}
 
-		frontContent, err := markdown.HTMLFront(card, deckFilePath, fileMountBase)
-		if err != nil {
-			continue
-		}
-		backContent, err := markdown.HTMLBack(card, deckFilePath, fileMountBase)
-		if err != nil {
-			continue
-		}
+	jobs := make(chan cacheJob)
+	results := make(chan cacheResult)
 
-		var front, back string
-		switch card.CardType() {
-		case types.CardTypeBasic:
-			front = fmt.Sprintf(
-				`<div class="question rich-text">%s</div><div class="answer rich-text"></div>`,
-				frontContent,
-			)
-			back = fmt.Sprintf(
-				`<div class="question rich-text">%s</div><div class="answer rich-text">%s</div>`,
-				frontContent, backContent,
-			)
-		default: // CardTypeCloze
-			front = fmt.Sprintf(`<div class="prompt rich-text">%s</div>`, frontContent)
-			back = fmt.Sprintf(`<div class="prompt rich-text">%s</div>`, backContent)
-		}
+	workers := runtime.NumCPU()
+	if workers > len(due) {
+		workers = len(due)
+	}
 
-		c.entries[card.Hash()] = Entry{Front: front, Back: back}
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			for j := range jobs {
+				if entry, ok := renderEntry(j.card.Card, fileMountBase); ok {
+					results <- cacheResult{hash: j.card.Card.Hash(), entry: entry}
+				}
+			}
+		}()
+	}
+
+	// Feed jobs from a separate goroutine so this function doesn't deadlock
+	// once the (unbuffered) jobs channel fills up before workers start
+	// draining it.
+	go func() {
+		for _, dc := range due {
+			jobs <- cacheJob{card: dc}
+		}
+		close(jobs)
+	}()
+
+	// Close results once every worker is done, so the range below
+	// terminates.
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// The map is only ever written here, in the calling goroutine, so it
+	// needs no mutex.
+	for r := range results {
+		c.entries[r.hash] = r.entry
 	}
 	return c
+}
+
+// renderEntry renders both faces of a single card into an Entry. It returns
+// ok=false if either face fails to render, matching Build's previous
+// behaviour of skipping cards with rendering errors.
+func renderEntry(card types.Card, fileMountBase string) (Entry, bool) {
+	deckFilePath := card.FilePath()
+
+	frontContent, err := markdown.HTMLFront(card, deckFilePath, fileMountBase)
+	if err != nil {
+		return Entry{}, false
+	}
+	backContent, err := markdown.HTMLBack(card, deckFilePath, fileMountBase)
+	if err != nil {
+		return Entry{}, false
+	}
+
+	var front, back string
+	switch card.CardType() {
+	case types.CardTypeBasic:
+		front = fmt.Sprintf(
+			`<div class="question rich-text">%s</div><div class="answer rich-text"></div>`,
+			frontContent,
+		)
+		back = fmt.Sprintf(
+			`<div class="question rich-text">%s</div><div class="answer rich-text">%s</div>`,
+			frontContent, backContent,
+		)
+	default: // CardTypeCloze
+		front = fmt.Sprintf(`<div class="prompt rich-text">%s</div>`, frontContent)
+		back = fmt.Sprintf(`<div class="prompt rich-text">%s</div>`, backContent)
+	}
+
+	return Entry{Front: front, Back: back}, true
 }
 
 // Get returns the cached Entry for the given hash, and whether it was found.
