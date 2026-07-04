@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """
-Convert `## card` ... `---` blocks embedded in Markdown files into JSON decks.
+Convert `## question` ... `---` blocks embedded in Markdown files into JSON decks.
 
-A card block starts with a line like `## card` or `## card::DeckName`
-(case-insensitive "card") and ends at the next line containing only `---`.
+A question block starts with a line like `## question` or `## question::DeckName`
+(case-insensitive "question") and ends at the next line containing only `---`.
 Using a heading + `---` terminator (instead of a code fence) means the
 block's content can safely contain its own code fences.
 
 Pipeline (small, single-purpose functions composed together):
     find_markdown_files
-        -> extract_card_blocks   (per file: locate ## card ... --- blocks)
-        -> parse_card_text       (per block: turn text into entries, log syntax issues)
-        -> group_card_blocks     (accumulate entries per deck name, across all files)
+        -> extract_question_blocks   (per file: locate ## question ... --- blocks)
+        -> parse_question_text       (per block: turn text into entries, log syntax issues)
+        -> group_question_blocks     (accumulate entries per deck name, across all files)
         -> dedupe_entries        (drop exact duplicates within a deck)
         -> write_decks           (write <deck>.json to the output directory)
 
 Usage:
-    card_to_json.py <input_dir> <output_dir>
+    question_to_json.py <input_dir> <output_dir>
 """
 
 import json
@@ -26,20 +26,20 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-logger = logging.getLogger("card_to_json")
+logger = logging.getLogger("question_to_json")
 
 DEFAULT_DECK_NAME = "Default"
 
-# Matches a card header, e.g. "## card", "## Card", or "## card::Test"
-HEADER_RE = re.compile(r"^##\s+[Cc]ard(?:::(\S+))?\s*$")
+# Matches a question header, e.g. "## question", "## Question", or "## question::Test"
+HEADER_RE = re.compile(r"^##\s+[Qq]uestion(?:::(\S+))?\s*$")
 
-# Matches the terminator line that closes a card block: a line of only dashes.
+# Matches the terminator line that closes a question block: a line of only dashes.
 TERMINATOR_RE = re.compile(r"^-{3,}\s*$")
 
 
 @dataclass
-class CardBlock:
-    """A single ## card ... --- block extracted from a Markdown file."""
+class QuestionBlock:
+    """A single ## question ... --- block extracted from a Markdown file."""
 
     deck_name: str
     content: str
@@ -51,7 +51,7 @@ def sanitize_deck_name(name):
     """
     Sanitize a deck name coming from untrusted Markdown content.
 
-    Strips path-separator-like characters so a crafted ## card::../../x
+    Strips path-separator-like characters so a crafted ## question::../../x
     block can't be used to write outside the output directory.
     """
     cleaned = re.sub(r'[\\/:*?"<>|]', "_", name).strip()
@@ -63,9 +63,9 @@ def find_markdown_files(input_dir):
     return sorted(input_dir.rglob("*.md"))
 
 
-def extract_card_blocks(text, source_file):
+def extract_question_blocks(text, source_file):
     """
-    Scan a Markdown file's text for "## card" / "## card::Name" blocks.
+    Scan a Markdown file's text for "## question" / "## question::Name" blocks.
 
     Each block runs from its header line to the next line containing only
     dashes (e.g. "---"). Unlike a code-fence-delimited block, this format
@@ -96,7 +96,7 @@ def extract_card_blocks(text, source_file):
 
         if not closed:
             logger.warning(
-                "%s:%d: card block '%s' has no closing '---'; "
+                "%s:%d: question block '%s' has no closing '---'; "
                 "rest of file after this point is ignored",
                 source_file,
                 start_line,
@@ -105,7 +105,7 @@ def extract_card_blocks(text, source_file):
             break
 
         blocks.append(
-            CardBlock(
+            QuestionBlock(
                 deck_name=deck_name,
                 content="\n".join(content_lines),
                 source_file=source_file,
@@ -117,9 +117,9 @@ def extract_card_blocks(text, source_file):
     return blocks
 
 
-def parse_card_text(text_data, context):
+def parse_question_text(text_data, context):
     """
-    Parse the text content of one card block into JSON-ready entries.
+    Parse the text content of one question block into JSON-ready entries.
 
     Recognizes three line prefixes:
         C:  a standalone concept entry
@@ -205,8 +205,8 @@ def parse_card_text(text_data, context):
     return entries, warnings
 
 
-def group_card_blocks(md_files):
-    """Extract and parse every card block across all files, grouped by deck name."""
+def group_question_blocks(md_files):
+    """Extract and parse every question block across all files, grouped by deck name."""
     decks = {}
     for md_file in md_files:
         try:
@@ -215,9 +215,11 @@ def group_card_blocks(md_files):
             logger.error("Failed to read %s: %s", md_file, e)
             continue
 
-        for block in extract_card_blocks(text, md_file):
-            context = f"{block.source_file}:{block.start_line} (card:{block.deck_name})"
-            entries, warnings = parse_card_text(block.content, context)
+        for block in extract_question_blocks(text, md_file):
+            context = (
+                f"{block.source_file}:{block.start_line} (question:{block.deck_name})"
+            )
+            entries, warnings = parse_question_text(block.content, context)
             for warning in warnings:
                 logger.warning(warning)
             decks.setdefault(block.deck_name, []).extend(entries)
@@ -252,7 +254,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     if len(sys.argv) != 3:
-        print("Usage: card_to_json.py <input_dir> <output_dir>", file=sys.stderr)
+        print("Usage: question_to_json.py <input_dir> <output_dir>", file=sys.stderr)
         sys.exit(1)
 
     input_dir = Path(sys.argv[1])
@@ -263,7 +265,7 @@ def main():
         sys.exit(1)
 
     md_files = find_markdown_files(input_dir)
-    decks = group_card_blocks(md_files)
+    decks = group_question_blocks(md_files)
     write_decks(decks, output_dir)
 
 

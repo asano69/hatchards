@@ -45,7 +45,7 @@ test:
 
 .PHONY: card
 card:
-	python3 ./scripts/card_to_json.py ~/Documents/obsidian/computer cards
+	python3 ./scripts/question_to_json.py ~/Documents/obsidian/computer cards
 
 # -----------
 
