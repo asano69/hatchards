@@ -6,7 +6,7 @@ services:
       - "3000:3000"
     volumes:
       - ./cards:/hashcards/cards
-      - ./pb_data:/hashcards/data
+      - ./data:/hashcards/pb_data
     # env_file:
     #  - hashcards.env
     environment:
