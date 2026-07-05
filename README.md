@@ -198,6 +198,31 @@ $ hashcards orphans list Cards
 # no output
 ```
 
+## Environment Variables
+
+`hashcards serve` reads its configuration from environment variables. All are optional; defaults are shown below.
+
+| Variable              | Default   | Description                                                                 |
+|------------------------|-----------|------------------------------------------------------------------------------|
+| `SERVER_HOST`          | `0.0.0.0` | Host address the HTTP server binds to.                                       |
+| `SERVER_PORT`          | `3000`    | Port the HTTP server listens on.                                             |
+| `DATA_ROOT`            | `.`       | Path to the collection directory (where your deck `.json` files live).       |
+| `FSRS_TARGET_RECALL`   | `0.9`     | Target recall probability (0–1) used to compute review intervals.            |
+| `FSRS_MIN_INTERVAL`    | `1.0`     | Minimum interval (in days) between reviews.                                  |
+| `FSRS_MAX_INTERVAL`    | `256.0`   | Maximum interval (in days) between reviews.                                  |
+
+Example:
+
+```bash
+SERVER_HOST=0.0.0.0
+SERVER_PORT=3000
+DATA_ROOT=./cards
+FSRS_TARGET_RECALL=0.9
+FSRS_MIN_INTERVAL=1.0
+FSRS_MAX_INTERVAL=256.0
+```
+
+These can be set directly, via `.envrc`/`direnv`, or (as in `hashacrds.env` and `compose.yaml`) loaded from a file / passed to the Docker container.
 
 ## Database
 
