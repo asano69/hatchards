@@ -65,7 +65,12 @@ The following JSON file is a valid hashcards deck:
 ## Tutorial
 
 >[!CAUTION]
->The original hashcards DB and the Go port version should be compatible, but they haven't been tested at all, so please make sure to back up your database.
+>While the databases for the Rust and Go port versions of hashcards are compatible, you cannot migrate by simply copying the file. The Go port version includes additional management ID columns used by PocketBase, as well as view tables for statistics. To migrate from the Rust version, you need to use a script to insert the data via the API.
+
+```sh
+# On a running server
+uv run --with requests import_rust_hashcards.py ~/data/hashcards.db http://127.0.0.1:3000 admin@mail.internal password
+```
 
 Create a directory for your flashcards, and add a JOSN file with some cards:
 
