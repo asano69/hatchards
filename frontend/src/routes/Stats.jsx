@@ -17,7 +17,8 @@ function buildDailySeries(records) {
     counts.set(Math.round(r.day_offset), r.count);
   }
   const series = [];
-  for (let day = 0; day < FORECAST_DAYS; day++) {
+  // ループを 1 から開始し、FORECAST_DAYS（30）まで回す
+  for (let day = 1; day <= FORECAST_DAYS; day++) {
     series.push({ day, count: counts.get(day) ?? 0 });
   }
   return series;
@@ -58,7 +59,7 @@ function buildSpec(series, colors) {
     mark: { type: "bar", color: colors.bar },
     encoding: {
       x: { field: "day", type: "ordinal", title: "Days from today" },
-      y: { field: "count", type: "quantitative", title: "Cards due" },
+      y: { field: "count", type: "quantitative", title: "Cards due", axis: { format: "d" } },
       tooltip: [
         { field: "day", title: "Day" },
         { field: "count", title: "Cards due" },
