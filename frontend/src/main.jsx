@@ -9,14 +9,14 @@ import "highlight.js/styles/github.css";
 
 import Home from "./routes/Home";
 import Drill from "./routes/Drill";
-import Admin from "./routes/Admin";
+import Stats from "./routes/Stats";
 
 render(
   () => (
     <Router>
       <Route path="/" component={Home} />
       <Route path="/drill" component={Drill} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/stats" component={Stats} />
     </Router>
   ),
   document.getElementById("app"),
