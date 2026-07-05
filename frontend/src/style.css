@@ -104,9 +104,11 @@
 .rich-text img {
   @apply mx-auto block max-h-[600px] max-w-full;
 }
-.rich-text ul,
+.rich-text ul {
+  @apply list-disc pl-6;
+}
 .rich-text ol {
-  @apply pl-6;
+  @apply list-decimal pl-6;
 }
 .rich-text p:not(:last-child),
 .rich-text img:not(:last-child),
