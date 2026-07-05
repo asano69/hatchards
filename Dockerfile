@@ -3,7 +3,7 @@ FROM node:22-alpine AS node-builder
 WORKDIR /build
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 RUN corepack enable && pnpm install
-COPY frontend .
+COPY frontend/ .
 RUN pnpm run build
 
 # Stage 1
