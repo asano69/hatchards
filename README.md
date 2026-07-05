@@ -159,12 +159,6 @@ Print collection statistics to standard output.
 $ hashcards stats [DIRECTORY]
 ```
 
-Options:
-
-- `--format=<FORMAT>`: Output format (`html` or `json`)
-
-At present, only JSON output is supported.
-
 ### `check`
 
 Check the integrity of a collection.
