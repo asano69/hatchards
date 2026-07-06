@@ -8,6 +8,9 @@
 
 **A Go port of [hashcards](https://github.com/eudoxia0/hashcards): refactored with [PocketBase](https://github.com/pocketbase/pocketbase) × [SolidJS](https://github.com/solidjs/solid) into a more hackable, single-binary web application.**
 
+hashcards is a plain-text spaced repetition system.  
+It parses JSON files containing flashcards, stores performance data in PocketBase, and presents cards through a web interface using the FSRS algorithm for scheduling.
+
 
 <img src="frontend/public/favicon.svg" width="100" align="right" />
 Features:
