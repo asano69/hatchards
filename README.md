@@ -80,13 +80,13 @@ Please use the script of your choice to convert your flashcards into this format
 
 ```sh
 # On a running server
-uv run --with requests import_rust_hashcards.py ~/data/hashcards.db http://127.0.0.1:3000 admin@mail.internal password
+$ uv run --with requests import_rust_hashcards.py ~/data/hashcards.db http://127.0.0.1:3000 admin@mail.internal password
 ```
 
 Create a directory for your flashcards, and add a JOSN file with some cards:
 
 ```bash
-$ mkdir cards
+$ mkdir -p cards
 $ cd cards
 $ cat > 1970-01-01-example.json << 'EOF'
 [
