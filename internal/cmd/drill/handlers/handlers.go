@@ -183,13 +183,17 @@ func (m *Manager) Has(deckKey string) bool {
 // RegisterAPI attaches the drill API and the shared media route directly to
 // PocketBase's router, so responses go through the same JSON/error helpers
 // as the rest of the app instead of a separate net/http.ServeMux.
+//
+// Every route here requires a valid superuser session. This is a
+// single-user app, so the existing PocketBase superuser account doubles
+// as the app's only login; there is no separate "users" collection.
 func RegisterAPI(r *router.Router[*core.RequestEvent], m *Manager, collectionRoot string) {
-	r.GET("/api/drill/state", m.handleState)
-	r.POST("/api/drill/action", m.handleAction)
+	r.GET("/api/drill/state", m.handleState).Bind(apis.RequireSuperuserAuth())
+	r.POST("/api/drill/action", m.handleAction).Bind(apis.RequireSuperuserAuth())
 	// apis.Static already handles Content-Type detection, path traversal
 	// guards, and file existence checks, so there is no need to hand-roll
 	// a MIME table or an os.Stat/http.ServeFile handler here.
-	r.GET("/drill/file/{path...}", apis.Static(os.DirFS(collectionRoot), false))
+	r.GET("/drill/file/{path...}", apis.Static(os.DirFS(collectionRoot), false)).Bind(apis.RequireSuperuserAuth())
 }
 
 func (m *Manager) handleState(e *core.RequestEvent) error {

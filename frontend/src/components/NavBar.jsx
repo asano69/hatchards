@@ -22,6 +22,10 @@ export default function NavBar(props) {
     }
   };
 
+  // Clearing the auth store is enough: AuthGate in main.jsx watches
+  // pb.authStore and swaps the app for the Login screen automatically.
+  const handleLogout = () => pb.authStore.clear();
+
   return (
     <div class="mb-10 flex w-full items-center justify-between">
 <A href="/" class="font-serif text-4xl flex items-center gap-2 transition-opacity hover:opacity-80">
@@ -33,6 +37,7 @@ export default function NavBar(props) {
         </button>
         <A href="/stats" class="btn">Stats</A>
         <A href="/admin" class="btn">Admin</A>
+        <button type="button" class="btn" onClick={handleLogout}>Log out</button>
       </nav>
     </div>
   );

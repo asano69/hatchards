@@ -158,9 +158,9 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 				freshCol = col
 			}
 			return re.JSON(http.StatusOK, buildSessionList(freshCol, database))
-		})
+		}).Bind(apis.RequireSuperuserAuth())
 
-		handlers.RegisterAPI(e.Router, manager, cfg.Data.Root) // TODO What is this?
+		handlers.RegisterAPI(e.Router, manager, cfg.Data.Root)
 
 		// POST /api/rescan re-scans the deck directory and registers a
 		// session for any deck added since the server started, without
@@ -175,12 +175,16 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 				return re.BadRequestError("register new sessions failed", err)
 			}
 			return re.JSON(http.StatusOK, map[string]any{"added": added})
-		})
+		}).Bind(apis.RequireSuperuserAuth())
 
 		e.Router.GET("/assets/{path...}", apis.Static(assetsFS, false))
 
 		// Solid Router decides which screen to render client-side, so both
-		// /drill and / serve the same static shell.
+		// /drill and / serve the same static shell. This shell is left
+		// unauthenticated on purpose: it's an empty HTML/JS bundle with no
+		// data in it. Every route that actually returns collection data is
+		// guarded above with RequireSuperuserAuth, so an unauthenticated
+		// visitor only ever sees the login screen the SPA renders client-side.
 		serveShell := func(re *core.RequestEvent) error {
 			re.Response.Header().Set("Content-Type", "text/html; charset=utf-8")
 			http.ServeFileFS(re.Response, re.Request, assets.FS, "index.html")
