@@ -1,10 +1,12 @@
 [
   {
+    "deckName": "Language",
     "kind": "basic",
     "question": "谢谢",
     "answer": "ありがとう"
   },
   {
+    "deckName": "Language",
     "kind": "basic",
     "question": "Ευχαριστώ",
     "answer": "ありがとう"

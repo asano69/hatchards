@@ -89,7 +89,7 @@ func TestEmptyArray(t *testing.T) {
 
 func TestBasicCard(t *testing.T) {
 	cards := parseCards(t, []jsonCard{
-		{Kind: "basic", Question: "What is Rust?", Answer: "A systems programming language."},
+		{Kind: "basic", Question: "What is Rust?", Answer: "A systems programming language.", DeckName: "Test"},
 	})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
@@ -99,7 +99,7 @@ func TestBasicCard(t *testing.T) {
 
 func TestMultilineQA(t *testing.T) {
 	cards := parseCards(t, []jsonCard{
-		{Kind: "basic", Question: "foo\nbaz\nbaz", Answer: "FOO\nBAR\nBAZ"},
+		{Kind: "basic", Question: "foo\nbaz\nbaz", Answer: "FOO\nBAR\nBAZ", DeckName: "Test"},
 	})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
@@ -109,8 +109,8 @@ func TestMultilineQA(t *testing.T) {
 
 func TestTwoQuestions(t *testing.T) {
 	cards := parseCards(t, []jsonCard{
-		{Kind: "basic", Question: "foo", Answer: "bar"},
-		{Kind: "basic", Question: "baz", Answer: "quux"},
+		{Kind: "basic", Question: "foo", Answer: "bar", DeckName: "Test"},
+		{Kind: "basic", Question: "baz", Answer: "quux", DeckName: "Test"},
 	})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
@@ -123,8 +123,8 @@ func TestTwoQuestions(t *testing.T) {
 
 func TestClozeFollowedByQuestion(t *testing.T) {
 	cards := parseCards(t, []jsonCard{
-		{Kind: "cloze", Text: "[foo]"},
-		{Kind: "basic", Question: "Question", Answer: "Answer"},
+		{Kind: "cloze", Text: "[foo]", DeckName: "Test"},
+		{Kind: "basic", Question: "Question", Answer: "Answer", DeckName: "Test"},
 	})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
@@ -134,7 +134,7 @@ func TestClozeFollowedByQuestion(t *testing.T) {
 }
 
 func TestClozeSingle(t *testing.T) {
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "Foo [bar] baz."}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "Foo [bar] baz.", DeckName: "Test"}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
@@ -142,7 +142,7 @@ func TestClozeSingle(t *testing.T) {
 }
 
 func TestClozeMultiple(t *testing.T) {
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "Foo [bar] baz [quux]."}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "Foo [bar] baz [quux].", DeckName: "Test"}})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -151,7 +151,7 @@ func TestClozeMultiple(t *testing.T) {
 }
 
 func TestClozeWithImage(t *testing.T) {
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "Foo [bar] ![](image.jpg) [quux]."}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "Foo [bar] ![](image.jpg) [quux].", DeckName: "Test"}})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -160,7 +160,7 @@ func TestClozeWithImage(t *testing.T) {
 }
 
 func TestClozeWithEscapedSquareBracket(t *testing.T) {
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "Key: [`\\[`]"}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "Key: [`\\[`]", DeckName: "Test"}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
@@ -168,7 +168,7 @@ func TestClozeWithEscapedSquareBracket(t *testing.T) {
 }
 
 func TestClozeWithMultipleEscapedBrackets(t *testing.T) {
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "\\[markdown\\] [`\\[cloze\\]`]"}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "\\[markdown\\] [`\\[cloze\\]`]", DeckName: "Test"}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
@@ -176,7 +176,7 @@ func TestClozeWithMultipleEscapedBrackets(t *testing.T) {
 }
 
 func TestMultiLineCloze(t *testing.T) {
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "[foo]\n[bar]\nbaz."}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "[foo]\n[bar]\nbaz.", DeckName: "Test"}})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -186,8 +186,8 @@ func TestMultiLineCloze(t *testing.T) {
 
 func TestTwoClozes(t *testing.T) {
 	cards := parseCards(t, []jsonCard{
-		{Kind: "cloze", Text: "[foo]"},
-		{Kind: "cloze", Text: "[bar]"},
+		{Kind: "cloze", Text: "[foo]", DeckName: "Test"},
+		{Kind: "cloze", Text: "[bar]", DeckName: "Test"},
 	})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
@@ -198,7 +198,7 @@ func TestTwoClozes(t *testing.T) {
 
 func TestClozeWithInitialBlankLine(t *testing.T) {
 	text := "\nBuild something people want in Lisp.\n\n\u2014 [Paul Graham], [_Hackers and Painters_]\n\n"
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: text}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: text, DeckName: "Test"}})
 	if len(cards) != 2 {
 		t.Fatalf("expected 2 cards, got %d", len(cards))
 	}
@@ -211,8 +211,8 @@ func TestClozeWithInitialBlankLine(t *testing.T) {
 
 func TestIdenticalBasicCards(t *testing.T) {
 	cards := parseCards(t, []jsonCard{
-		{Kind: "basic", Question: "foo", Answer: "bar"},
-		{Kind: "basic", Question: "foo", Answer: "bar"},
+		{Kind: "basic", Question: "foo", Answer: "bar", DeckName: "Test"},
+		{Kind: "basic", Question: "foo", Answer: "bar", DeckName: "Test"},
 	})
 	if len(cards) != 1 {
 		t.Errorf("expected 1 card after dedup, got %d", len(cards))
@@ -221,8 +221,8 @@ func TestIdenticalBasicCards(t *testing.T) {
 
 func TestIdenticalClozeCards(t *testing.T) {
 	cards := parseCards(t, []jsonCard{
-		{Kind: "cloze", Text: "foo [bar]"},
-		{Kind: "cloze", Text: "foo [bar]"},
+		{Kind: "cloze", Text: "foo [bar]", DeckName: "Test"},
+		{Kind: "cloze", Text: "foo [bar]", DeckName: "Test"},
 	})
 	if len(cards) != 1 {
 		t.Errorf("expected 1 card after dedup, got %d", len(cards))
@@ -231,7 +231,7 @@ func TestIdenticalClozeCards(t *testing.T) {
 
 func TestIdenticalCardsAcrossFiles(t *testing.T) {
 	dir := t.TempDir()
-	data, err := json.Marshal([]jsonCard{{Kind: "basic", Question: "foo", Answer: "bar"}})
+	data, err := json.Marshal([]jsonCard{{Kind: "basic", Question: "foo", Answer: "bar", DeckName: "Test"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -258,8 +258,10 @@ func TestIdenticalCardsAcrossFiles(t *testing.T) {
 
 // ---- Deck name tests ----
 
-func TestDeckNameFromFilename(t *testing.T) {
-	path := writeDeck(t, "MyDeck", `[{"kind":"basic","question":"foo","answer":"bar"}]`)
+// TestDeckNameFromJSON verifies that a card's deck name comes from its
+// "deckName" field, independent of the file's name.
+func TestDeckNameFromJSON(t *testing.T) {
+	path := writeDeck(t, "SomeFile", `[{"kind":"basic","question":"foo","answer":"bar","deckName":"MyDeck"}]`)
 	cards, err := ParseFile(path)
 	if err != nil {
 		t.Fatalf("ParseFile: %v", err)
@@ -272,10 +274,18 @@ func TestDeckNameFromFilename(t *testing.T) {
 	}
 }
 
+// TestMissingDeckName verifies that an entry without "deckName" is rejected.
+func TestMissingDeckName(t *testing.T) {
+	path := writeDeck(t, "bad_deck", `[{"kind":"basic","question":"foo","answer":"bar"}]`)
+	if _, err := ParseFile(path); err == nil {
+		t.Error("expected error for missing deckName, got nil")
+	}
+}
+
 // ---- Special character tests ----
 
 func TestClozeDeletionWithExclamationSign(t *testing.T) {
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "The notation [$n!$] means 'n factorial'."}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "The notation [$n!$] means 'n factorial'.", DeckName: "Test"}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
@@ -290,7 +300,7 @@ func TestClozeDeletionWithExclamationSign(t *testing.T) {
 }
 
 func TestClozeDeletionWithMath(t *testing.T) {
-	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "The string `\\alpha` renders as [$\\alpha$]."}})
+	cards := parseCards(t, []jsonCard{{Kind: "cloze", Text: "The string `\\alpha` renders as [$\\alpha$].", DeckName: "Test"}})
 	if len(cards) != 1 {
 		t.Fatalf("expected 1 card, got %d", len(cards))
 	}
@@ -304,7 +314,7 @@ func TestClozeDeletionWithMath(t *testing.T) {
 // ---- Error handling ----
 
 func TestUnknownCardType(t *testing.T) {
-	path := writeDeck(t, "bad_deck", `[{"kind":"invalid"}]`)
+	path := writeDeck(t, "bad_deck", `[{"kind":"invalid","deckName":"Test"}]`)
 	if _, err := ParseFile(path); err == nil {
 		t.Error("expected error for unknown card type, got nil")
 	}
