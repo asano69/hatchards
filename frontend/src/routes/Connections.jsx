@@ -60,10 +60,11 @@ export default function Connections() {
                 </Show>
               </div>
               <div class="flex gap-2">
+            <Button value="Sync" onClick={async () => { await pb.send(`/api/connections/${c.id}/mirror`, { method: "POST" });  await refetch();}}
+/>
                 <Button value="Edit" onClick={() => startEdit(c)} />
                 <Button variant="danger" value="Delete" onClick={() => remove(c.id)} />
-                <Button value="Sync" onClick={async () => { await pb.send(`/api/connections/${c.id}/mirror`, { method: "POST" });  await refetch();}}
-/>
+                
               </div>
             </li>
           )}
