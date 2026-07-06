@@ -162,6 +162,7 @@ func Run(app *pocketbase.PocketBase, cfg *config.Config) error {
 
 		handlers.RegisterAPI(e.Router, manager, cfg.Data.Root)
 		RegisterConnectionsAPI(e.Router, database)
+		RegisterMirrorAPI(e.Router, database, cfg.Data.Root)
 		// POST /api/rescan re-scans the deck directory and registers a
 		// session for any deck added since the server started, without
 		// requiring a restart. Existing sessions are left untouched.
