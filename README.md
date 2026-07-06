@@ -32,12 +32,12 @@ Differences from the Original:
 - **PocketBase**: It allows you to directly check the state of cards currently being studied without having to run SQL commands. It also integrates seamlessly with an SPA architecture where the backend and frontend are decoupled.
 - **SolidJS**: Solid.js was chosen to easily handle complex UI layouts.
 - **JSON Intermediate Files**: The markdown parser from the original implementation has been moved to a Python script, changing the conversion workflow to: `Markdown → JSON → HTML`. This approach makes it much easier for the script to aggregate notes scattered across various locations.
-- **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule.
+- **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule. 
 
 Key Design Considerations: 
 
 - **Streamlining flashcard creation**: By storing both annotation notes—used to mentally encode the logical structure of a topic—and question lists—used to test whether a program functions correctly—within the same context, we simplify the act of creating them. This allows us to fully channel our awareness into the learning content and the act of learning itself.
-- **Context Preservation Principle**: A flashcard should always be stored together with the context from which it was derived.
+- **Context Preservation Principle**: A flashcard should always be stored together with the context from which it was derived. Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
 
 ## Screenshot
 
