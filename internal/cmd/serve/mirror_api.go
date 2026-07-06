@@ -9,7 +9,6 @@ import (
 
 	"github.com/asano69/hashcards/internal/cryptoutil"
 	"github.com/asano69/hashcards/internal/db"
-	"github.com/asano69/hashcards/internal/errs"
 	"github.com/asano69/hashcards/internal/mirror"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -23,9 +22,12 @@ import (
 func RegisterMirrorAPI(r *router.Router[*core.RequestEvent], database *db.Database, dataRoot string) {
 	r.POST("/api/connections/{id}/mirror", func(e *core.RequestEvent) error {
 		id := e.Request.PathValue("id")
+		logrus.WithField("connection_id", id).Info("mirror sync: request received")
 		if err := syncConnection(database, dataRoot, id); err != nil {
+			logrus.WithField("connection_id", id).WithError(err).Warn("mirror sync: request failed")
 			return e.BadRequestError("mirror sync failed", err)
 		}
+		logrus.WithField("connection_id", id).Info("mirror sync: request succeeded")
 		return e.JSON(http.StatusOK, map[string]any{"synced": true})
 	}).Bind(apis.RequireSuperuserAuth())
 }
@@ -33,13 +35,14 @@ func RegisterMirrorAPI(r *router.Router[*core.RequestEvent], database *db.Databa
 // syncConnection decrypts the connection's token just long enough to run
 // one Sync call, zeroing it immediately afterwards regardless of outcome,
 // then persists the result (success or error) back onto the record.
+//
+// local_path always comes from mc.LocalPath, which db.CreateConnection sets
+// to db.SanitizeConnectionName(name) at creation time — it is never
+// user-supplied and never recomputed later.
 func syncConnection(database *db.Database, dataRoot, id string) error {
 	mc, err := database.GetMirrorConnection(id)
 	if err != nil {
 		return err
-	}
-	if mc.LocalPath == "" {
-		return errs.Newf("connection %q has no local_path configured", mc.Name)
 	}
 
 	token, err := database.DecryptConnectionToken(id)
@@ -53,6 +56,13 @@ func syncConnection(database *db.Database, dataRoot, id string) error {
 		localPath = filepath.Join(dataRoot, localPath)
 	}
 
+	logrus.WithFields(logrus.Fields{
+		"connection":       mc.Name,
+		"remote_url":       mc.RemoteURL,
+		"local_path_final": localPath,
+		"data_root":        dataRoot,
+	}).Info("mirror sync: resolved local path")
+
 	syncErr := mirror.Sync(mirror.Connection{
 		Name:      mc.Name,
 		RemoteURL: mc.RemoteURL,
@@ -64,7 +74,7 @@ func syncConnection(database *db.Database, dataRoot, id string) error {
 	// is visible in the UI. A failure to persist the result is logged but
 	// doesn't mask the original syncErr, which is what the caller sees.
 	if recordErr := database.RecordSyncResult(id, syncErr); recordErr != nil {
-		logrus.WithError(recordErr).Warn("record sync result failed")
+		logrus.WithError(recordErr).Warn("mirror sync: record sync result failed")
 	}
 	return syncErr
 }

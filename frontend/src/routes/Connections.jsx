@@ -3,7 +3,7 @@ import NavBar from "../components/NavBar";
 import Button from "../components/Button";
 import pb from "../lib/pb";
 
-const emptyForm = { id: null, name: "", remote_url: "", username: "", token: "", local_path: "", enabled: true };
+const emptyForm = { id: null, name: "", remote_url: "", username: "", token: "", enabled: true };
 
 async function fetchConnections() {
   return pb.collection("connections").getFullList({ sort: "name" });
@@ -16,7 +16,7 @@ export default function Connections() {
 
   const startCreate = () => { setForm(emptyForm); setError(""); };
   const startEdit = (c) =>
-    setForm({ id: c.id, name: c.name, remote_url: c.remote_url, username: c.username, token: "", local_path: c.local_path, enabled: c.enabled });
+    setForm({ id: c.id, name: c.name, remote_url: c.remote_url, username: c.username, token: "", enabled: c.enabled });
 
   const set = (key) => (e) =>
     setForm({ ...form(), [key]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
@@ -54,6 +54,7 @@ export default function Connections() {
               <div>
                 <div class="font-semibold">{c.name}</div>
                 <div class="text-sm text-[var(--color-border-soft)]">{c.remote_url}</div>
+                <div class="text-sm text-[var(--color-border-soft)]">local: {c.local_path}</div>
                 <Show when={c.last_error}>
                   <div class="text-sm text-[#dc3545]">{c.last_error}</div>
                 </Show>
@@ -79,8 +80,6 @@ export default function Connections() {
           class="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-bg)] px-3 py-2" />
         <input type="password" value={form().token} onInput={set("token")} required={!form().id}
           placeholder={form().id ? "Token (leave blank to keep existing)" : "Token"}
-          class="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-bg)] px-3 py-2" />
-        <input placeholder="Local path (optional)" value={form().local_path} onInput={set("local_path")}
           class="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-bg)] px-3 py-2" />
         <label class="flex items-center gap-2">
           <input type="checkbox" checked={form().enabled} onInput={set("enabled")} />

@@ -15,19 +15,21 @@ import (
 	"net/http"
 )
 
+// connectionRequest deliberately has no LocalPath field: it is always
+// derived server-side from Name (db.SanitizeConnectionName), so a client
+// can't set or override it, and never needs to.
 type connectionRequest struct {
 	Name      string `json:"name"`
 	RemoteURL string `json:"remote_url"`
 	Username  string `json:"username"`
 	Token     string `json:"token"`
-	LocalPath string `json:"local_path"`
 	Enabled   bool   `json:"enabled"`
 }
 
 func toConnectionInput(b connectionRequest) db.ConnectionInput {
 	return db.ConnectionInput{
 		Name: b.Name, RemoteURL: b.RemoteURL, Username: b.Username,
-		Token: b.Token, LocalPath: b.LocalPath, Enabled: b.Enabled,
+		Token: b.Token, Enabled: b.Enabled,
 	}
 }
 
@@ -40,8 +42,6 @@ func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.D
 		}
 		record, err := database.CreateConnection(toConnectionInput(body))
 		if err != nil {
-			// Log the real cause server-side; the client only sees a generic
-			// message so secrets or internal details never leak in the response.
 			logrus.WithError(err).Warn("create connection failed")
 			return e.BadRequestError("create connection failed", err)
 		}

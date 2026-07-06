@@ -1,6 +1,9 @@
 package db
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/asano69/hashcards/internal/cryptoutil"
 	"github.com/asano69/hashcards/internal/errs"
 	"github.com/pocketbase/pocketbase/core"
@@ -8,18 +11,41 @@ import (
 	"github.com/asano69/hashcards/internal/types"
 )
 
+// unsafePathCharsRe matches characters that are unsafe to use verbatim in a
+// directory name (path separators, and other characters that are invalid or
+// awkward on common filesystems).
+var unsafePathCharsRe = regexp.MustCompile(`[\\/:*?"<>|]+`)
+
+// SanitizeConnectionName converts a connection name into a filesystem-safe
+// directory name. This is used as the connection's local_path so it never
+// needs to be entered manually. Since connection names are unique (unique
+// index on "name"), the derived directory names are unique too — this is
+// what prevents two connections from ever being mirrored into the same
+// directory (see docs/connections-mirror-design.md).
+func SanitizeConnectionName(name string) string {
+	cleaned := unsafePathCharsRe.ReplaceAllString(name, "_")
+	cleaned = strings.TrimSpace(cleaned)
+	cleaned = strings.Trim(cleaned, ".") // avoid ".", "..", or leading-dot dirs
+	if cleaned == "" {
+		cleaned = "connection"
+	}
+	return cleaned
+}
+
 // ConnectionInput is the plaintext data accepted from the create/update API.
 // Token is empty on update when the caller wants to keep the existing token.
+// There is no LocalPath field: it is always derived server-side from Name
+// (see SanitizeConnectionName), not supplied by the caller.
 type ConnectionInput struct {
 	Name      string
 	RemoteURL string
 	Username  string
 	Token     string
-	LocalPath string
 	Enabled   bool
 }
 
 // CreateConnection encrypts the token and inserts a new "connections" record.
+// local_path is derived from the connection name at creation time.
 func (db *Database) CreateConnection(in ConnectionInput) (*core.Record, error) {
 	collection, err := db.app.FindCollectionByNameOrId("connections")
 	if err != nil {
@@ -35,7 +61,7 @@ func (db *Database) CreateConnection(in ConnectionInput) (*core.Record, error) {
 	record.Set("remote_url", in.RemoteURL)
 	record.Set("username", in.Username)
 	record.Set("token_ciphertext", ciphertext)
-	record.Set("local_path", in.LocalPath)
+	record.Set("local_path", SanitizeConnectionName(in.Name))
 	record.Set("enabled", in.Enabled)
 	if err := db.app.Save(record); err != nil {
 		return nil, errs.Newf("save connection: %v", err)
@@ -46,6 +72,11 @@ func (db *Database) CreateConnection(in ConnectionInput) (*core.Record, error) {
 // UpdateConnection updates a "connections" record by id. The token is only
 // re-encrypted when in.Token is non-empty, so editing other fields doesn't
 // require re-entering the secret.
+//
+// local_path is intentionally left untouched here, even if Name changes:
+// it was fixed at creation time. Recomputing it on every rename would
+// silently orphan the existing local clone (the mirror data would still be
+// on disk under the old directory name, but no longer be found).
 func (db *Database) UpdateConnection(id string, in ConnectionInput) (*core.Record, error) {
 	record, err := db.app.FindRecordById("connections", id)
 	if err != nil {
@@ -55,7 +86,6 @@ func (db *Database) UpdateConnection(id string, in ConnectionInput) (*core.Recor
 	record.Set("name", in.Name)
 	record.Set("remote_url", in.RemoteURL)
 	record.Set("username", in.Username)
-	record.Set("local_path", in.LocalPath)
 	record.Set("enabled", in.Enabled)
 
 	if in.Token != "" {
@@ -70,6 +100,28 @@ func (db *Database) UpdateConnection(id string, in ConnectionInput) (*core.Recor
 		return nil, errs.Newf("save connection: %v", err)
 	}
 	return record, nil
+}
+
+// EnsureLocalPath returns the connection's local_path, backfilling it from
+// the connection's name if it is empty or ".". This self-heals connections
+// created before local_path became a derived, non-editable field (including
+// the ones that used to collide on the same directory). The backfilled
+// value is persisted, so this only runs once per connection.
+func (db *Database) EnsureLocalPath(id string) (string, error) {
+	record, err := db.app.FindRecordById("connections", id)
+	if err != nil {
+		return "", errs.Newf("find connection: %v", err)
+	}
+	path := record.GetString("local_path")
+	if path != "" && path != "." {
+		return path, nil
+	}
+	path = SanitizeConnectionName(record.GetString("name"))
+	record.Set("local_path", path)
+	if err := db.app.Save(record); err != nil {
+		return "", errs.Newf("backfill local_path: %v", err)
+	}
+	return path, nil
 }
 
 // DecryptConnectionToken decrypts a connection's token for one-off use (e.g.
