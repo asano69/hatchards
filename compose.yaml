@@ -9,7 +9,7 @@ services:
       - hashcards.env
     volumes:
       - ./data:/hashcards/pb_data
-      - ./cards:/hashcards/cards # optional
+      - ./cards:/hashcards/cards
       - ./hooks:/hashcards/hooks # optional
       #- /etc/ssl/certs/root_ca.crt:/certs/root_ca.crt:ro # optional
     environment:
