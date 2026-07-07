@@ -26,10 +26,15 @@ COPY --from=node-builder /build/internal/assets/dist ./internal/assets/dist
 
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o hashcards ./cmd/hashcards
 
+
+
 # Stage 2: runtime
 FROM alpine:3.23
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
 WORKDIR /hashcards
+
 RUN apk add --no-cache \
     ca-certificates \
     su-exec \
@@ -39,10 +44,11 @@ RUN apk add --no-cache \
     nano \
     git \
     openssh-client \
-    jq curl rsync python3 uv awk
-
-
-
+    jq \
+    curl \
+    rsync \
+    python3 \
+    gaw
 
 
 RUN addgroup -g 1000 hashcards && \
