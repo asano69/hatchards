@@ -14,20 +14,16 @@ Features:
 
 - **Content Addressable:** cards are identified by the hash of their text. This
   means a card's progress is reset when the card is edited.
-- **Low Friction:** you create flashcards by typing into a text file, using a
-  lightweight notation to denote flashcard sides and cloze deletions.
-- **Simple:** the only card types are front-back and cloze cards. More complex
-  workflows (e.g.: Anki-style note types, card templates, automation) be can
-  implemented using a Makefile and some scripts.
+- **Simple**:
+    - By storing both annotation notes—used to mentally encode the logical structure of a topic—and question lists—used to test whether a program functions correctly—within the same context, we simplify the act of creating them. This allows us to fully channel our awareness into the learning content and the act of learning itself.
+    - A flashcard should always be stored together with the context from which it was derived. Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
   minimizing time spent reviewing.
-- **Git mirroring with post-mirror hook execution**: Because hooks are fully programmable, flashcards can, in principle, be generated automatically from any repository. Repositories containing structured Q&A data can therefore be transformed into hashcrds decks.
 - **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule. 
+- **Git mirroring**: Because hooks are fully programmable, flashcards can, in principle, be generated automatically from any repository. Repositories containing structured Q&A data can therefore be transformed into hashcrds decks.
 
-Key Design Considerations: 
 
-- **Context Preservation Principle**: A flashcard should always be stored together with the context from which it was derived. Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
-- **Streamlining flashcard creation**: By storing both annotation notes—used to mentally encode the logical structure of a topic—and question lists—used to test whether a program functions correctly—within the same context, we simplify the act of creating them. This allows us to fully channel our awareness into the learning content and the act of learning itself.
+
 
 Tech Stack
 - Go
