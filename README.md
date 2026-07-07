@@ -2,7 +2,7 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hashcards)
 
-## Introduction
+## Introduction 🐝
 
 <img src="frontend/public/favicon.svg" width="100" align="right" />
 
@@ -29,7 +29,7 @@ Tech Stack
 - [Vega-Lite](https://github.com/vega/vega-lite)
 
 
-## Recommended Workflow
+## Workflow 🍯
 1. In a Markdown editor such as Obsidian, take notes on what you have understood about topics that interest you.
 2. In question sections, write the information you want to memorize as a list of Q&A pairs. (e.g. `## Question::DeckName {{Q&A}} ---`)
 3. Push the Markdown notebooks to a remote repository.
