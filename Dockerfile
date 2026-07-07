@@ -38,7 +38,8 @@ RUN apk add --no-cache \
     bash \
     nano \
     git \
-    openssh-client
+    openssh-client \
+    jq curl rsync python3 uv awk
 
 
 
