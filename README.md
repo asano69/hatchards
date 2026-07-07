@@ -1,17 +1,18 @@
 # hashcards
 
-
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/asano69/hashcards)
 
->[!WARNING]
->This app is still under development.
+## Introduction
+
+<img src="frontend/public/favicon.svg" width="100" align="right" />
+
+A flashcard should always be stored together with the context from which it was derived. (Context Preservation Principle) Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
 
 This application is programmable and automates flashcard generation from Q&A lists in arbitrary formats through JSON intermediate files. It stores performance data in SQLite3 and supports efficient spaced repetition through scheduling based on the FSRS algorithm.
 
 
-<img src="frontend/public/favicon.svg" width="100" align="right" />
-Features:
 
+Features:
 - **Content Addressable:** cards are identified by the hash of their text. This
   means a card's progress is reset when the card is edited.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
@@ -19,8 +20,7 @@ Features:
 - **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule. 
 - **Git mirroring**: Because hooks are fully programmable, flashcards can, in principle, be generated automatically from any repository. Repositories containing structured Q&A data can therefore be transformed into hashcrds decks.
 
-Context Preservation Principle:
-- A flashcard should always be stored together with the context from which it was derived. Flashcards are generated automatically, with Markdown notebooks serving as their sole source of truth. Users only need to focus on building and refining a knowledge base composed of Markdown files.
+
 
 Tech Stack
 - Go
@@ -36,6 +36,9 @@ Tech Stack
 4. If the repository mirroring settings are configured correctly, flashcards will be generated automatically.
 
 ## Screenshot
+
+>[!WARNING]
+>This app is still under development.
 
 <img src=".github/assets/sample-01.png" width="300" /><img src=".github/assets/sample-02.png" width="300" />
 
