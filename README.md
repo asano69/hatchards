@@ -280,9 +280,19 @@ The `reviews` table has the following schema:
 [rustup]: https://rustup.rs/
 
 
+## License
+
+© 2026- by asano69. Licensed under the Apache 2.0 license.  
+© 2025–2026 by Fernando Borretti. Licensed under the Apache 2.0 license.  
+
 ---
 
 
 To learn how to write good flashcards, read [Effective Spaced Repetition][esr].  
 => https://gutenberg.org/cache/epub/47748/pg47748-images.html  
 => https://archive.org/details/reasonwhynathist00philrich/page/n5/mode/2up  
+
+
+
+
+
