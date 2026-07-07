@@ -38,6 +38,7 @@ services:
     #  - traefik.http.routers.hashcards.rule=Host(`hashcards.app.internal`)
 #volumes:
 #  data:
+#  cards:
 #networks:
 #  traefik_net:
 #    external: true
