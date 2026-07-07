@@ -21,7 +21,7 @@ Features:
   implemented using a Makefile and some scripts.
 - **Efficient:** uses [FSRS] for scheduling reviews, maximizing learning while
   minimizing time spent reviewing.
-- **JSON Intermediate Files**: The markdown parser from the original implementation has been moved to a Python script, changing the conversion workflow to: `Markdown → JSON → HTML`. This approach makes it much easier for the script to aggregate notes scattered across various locations.
+- **Git mirroring with post-mirror hook execution**: Because hooks are fully programmable, flashcards can, in principle, be generated automatically from any repository. Repositories containing structured Q&A data can therefore be transformed into hashcrds decks.
 - **Visibility**: Provides a detailed view of the cards' current status and offers clear visualization of the learning schedule. 
 
 Key Design Considerations: 
