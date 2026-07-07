@@ -230,18 +230,27 @@ def write_entries(entries, output_dir):
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
     if len(sys.argv) != 3:
         print("Usage: question_to_json.py <input_dir> <output_dir>", file=sys.stderr)
         sys.exit(1)
     input_dir = Path(sys.argv[1])
     output_dir = Path(sys.argv[2])
+    logger.debug("Resolved input_dir: %s", input_dir.resolve())
+    logger.debug("Resolved output_dir: %s", output_dir.resolve())
     if not input_dir.is_dir():
         print(f"Error: input directory not found: {input_dir}", file=sys.stderr)
         sys.exit(1)
+    md_files = find_markdown_files(input_dir)
+    logger.debug("Found %d Markdown file(s) under %s", len(md_files), input_dir)
+    if not md_files:
+        logger.warning("No .md files found under %s; output will be empty", input_dir)
     all_entries = []
-    for md_file in find_markdown_files(input_dir):
-        all_entries.extend(process_markdown_file(md_file))
+    for md_file in md_files:
+        file_entries = process_markdown_file(md_file)
+        logger.debug("%s: %d entr(y/ies)", md_file, len(file_entries))
+        all_entries.extend(file_entries)
+    logger.debug("Total entries before dedup: %d", len(all_entries))
     write_entries(all_entries, output_dir)
 
 

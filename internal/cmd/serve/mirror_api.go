@@ -43,20 +43,39 @@ func RegisterMirrorAPI(r *router.Router[*core.RequestEvent], database *db.Databa
 	}).Bind(apis.RequireSuperuserAuth())
 }
 
+// mirrorRoot returns the directory a connection's local_path is resolved
+// against for cloning/pulling.
+//
+// Connections without a hook mirror directly into dataRoot (e.g.
+// cards/<name>), matching the pre-hook behavior exactly.
+//
+// Connections with a hook mirror into dataRoot/.mirror instead: their git
+// working tree holds source notes, not JSON decks, so it must stay out of
+// the deck directory that walkDecks scans. The hook's generated JSON decks
+// go directly into dataRoot/<name> (see runPostSyncHook), which is scanned
+// as usual.
+func mirrorRoot(dataRoot string, mc db.MirrorableConnection) string {
+	if mc.HookName == "" {
+		return dataRoot
+	}
+	return filepath.Join(dataRoot, ".mirror")
+}
+
 // syncConnection decrypts the connection's token just long enough to run
 // one Sync call, zeroing it immediately afterwards regardless of outcome,
 // then persists the result (success or error) back onto the record.
 //
 // local_path always comes from mc.LocalPath, which db.CreateConnection sets
 // to db.SanitizeConnectionName(name) at creation time — it is never
-// user-supplied and never recomputed later.
+// user-supplied and never recomputed later. Where it resolves to on disk
+// depends on whether a hook is configured; see mirrorRoot.
 //
 // If the connection has a hook_name, it runs once the sync succeeds,
-// reading from the freshly-synced working tree and writing generated JSON
-// decks to dataRoot/.generated/<local_path>/, which walkDecks already picks
-// up like any other deck directory. Connections without a hook_name are
-// unaffected: the hook step is skipped entirely, exactly as before this
-// feature existed.
+// reading from the freshly-synced working tree (dataRoot/.mirror/<name>)
+// and writing generated JSON decks to dataRoot/<name>, which walkDecks
+// already picks up like any other deck directory. Connections without a
+// hook_name are unaffected: the hook step is skipped entirely, exactly as
+// before this feature existed.
 func syncConnection(database *db.Database, dataRoot, hooksDir, id string) error {
 	mc, err := database.GetMirrorConnection(id)
 	if err != nil {
@@ -71,7 +90,7 @@ func syncConnection(database *db.Database, dataRoot, hooksDir, id string) error 
 
 	localPath := mc.LocalPath
 	if !filepath.IsAbs(localPath) {
-		localPath = filepath.Join(dataRoot, localPath)
+		localPath = filepath.Join(mirrorRoot(dataRoot, mc), localPath)
 	}
 
 	logrus.WithFields(logrus.Fields{
@@ -102,15 +121,20 @@ func syncConnection(database *db.Database, dataRoot, hooksDir, id string) error 
 }
 
 // runPostSyncHook resolves and runs the connection's configured hook
-// script, writing its output to dataRoot/.generated/<local_path>/ rather
-// than into the git working tree itself, so a generated file can never
-// collide with an untracked path on the next pull.
+// script, writing its output to dataRoot/<local_path> — the connection's
+// normal deck directory — rather than into the git working tree itself
+// (which now lives under dataRoot/.mirror/<local_path>). This also means a
+// generated file can never collide with an untracked path on the next pull,
+// since the two directories are entirely separate trees.
 func runPostSyncHook(hooksDir string, mc db.MirrorableConnection, dataRoot, sourceDir string) error {
 	scriptPath, err := hook.Resolve(hooksDir, mc.HookName)
 	if err != nil {
 		return err
 	}
-	outputDir := filepath.Join(dataRoot, ".generated", mc.LocalPath)
+	outputDir := mc.LocalPath
+	if !filepath.IsAbs(outputDir) {
+		outputDir = filepath.Join(dataRoot, outputDir)
+	}
 
 	log := logrus.WithFields(logrus.Fields{
 		"connection": mc.Name,
@@ -122,7 +146,7 @@ func runPostSyncHook(hooksDir string, mc db.MirrorableConnection, dataRoot, sour
 	ctx, cancel := context.WithTimeout(context.Background(), hookTimeout)
 	defer cancel()
 
-	if err := hook.Run(ctx, scriptPath, sourceDir, outputDir); err != nil {
+	if _, err := hook.Run(ctx, scriptPath, sourceDir, outputDir); err != nil {
 		log.WithError(err).Warn("post-sync hook: failed")
 		return err
 	}

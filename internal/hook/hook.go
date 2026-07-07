@@ -47,11 +47,6 @@ func List(hooksDir string) ([]string, error) {
 	return names, nil
 }
 
-// Resolve validates name and returns the absolute path of the hook script.
-// Existence and executability are re-checked on every call (not just when
-// the connection was saved), so hooksDir contents can change without
-// restarting the server. Resolve(hooksDir, "") returns ("", nil), meaning
-// "no hook configured".
 func Resolve(hooksDir, name string) (string, error) {
 	if name == "" {
 		return "", nil
@@ -60,14 +55,18 @@ func Resolve(hooksDir, name string) (string, error) {
 		return "", errs.Newf("invalid hook name: %q", name)
 	}
 	path := filepath.Join(hooksDir, name)
-	info, err := os.Stat(path)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", errs.Newf("resolve hook path: %v", err)
+	}
+	info, err := os.Stat(absPath)
 	if err != nil {
 		return "", errs.Newf("hook not found: %s", name)
 	}
 	if !info.Mode().IsRegular() || info.Mode()&0111 == 0 {
 		return "", errs.Newf("hook is not executable: %s", name)
 	}
-	return path, nil
+	return absPath, nil
 }
 
 // Run executes the resolved script directly (no shell), passing the source
@@ -78,24 +77,33 @@ func Resolve(hooksDir, name string) (string, error) {
 // generated JSON decks should be written, and is created if it doesn't
 // already exist.
 //
-// This is still injection-free: scriptPath, sourceDir, and outputDir are a
-// fixed-length Go slice passed directly to exec, never interpreted by a
-// shell, so nothing here can be exploited to run arbitrary commands.
-func Run(ctx context.Context, scriptPath, sourceDir, outputDir string) error {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		return errs.Newf("create hook output dir: %v", err)
+// Run always returns the script's combined stdout/stderr output, even on
+// success, so the caller can surface it in the server log. This is what
+// lets a script's own logging (e.g. Python's logging module) show up
+// alongside the Go server's logs.
+func Run(ctx context.Context, scriptPath, sourceDir, outputDir string) (string, error) {
+	absSource, err := filepath.Abs(sourceDir)
+	if err != nil {
+		return "", errs.Newf("resolve source dir: %v", err)
+	}
+	absOutput, err := filepath.Abs(outputDir)
+	if err != nil {
+		return "", errs.Newf("resolve output dir: %v", err)
 	}
 
-	cmd := exec.CommandContext(ctx, scriptPath, sourceDir, outputDir)
-	cmd.Dir = sourceDir
+	if err := os.MkdirAll(absOutput, 0o755); err != nil {
+		return "", errs.Newf("create hook output dir: %v", err)
+	}
+
+	cmd := exec.CommandContext(ctx, scriptPath, absSource, absOutput)
 	cmd.Env = append(os.Environ(),
-		"HASHCARDS_SOURCE_DIR="+sourceDir,
-		"HASHCARDS_OUTPUT_DIR="+outputDir,
+		"HASHCARDS_SOURCE_DIR="+absSource,
+		"HASHCARDS_OUTPUT_DIR="+absOutput,
 	)
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return errs.Newf("hook %q failed: %v\n%s", filepath.Base(scriptPath), err, out)
+		return string(out), errs.Newf("hook %q failed: %v\n%s", filepath.Base(scriptPath), err, out)
 	}
-	return nil
+	return string(out), nil
 }

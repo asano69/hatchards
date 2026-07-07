@@ -97,7 +97,7 @@ echo '[]' > "$HASHCARDS_OUTPUT_DIR/deck.json"
 	sourceDir := t.TempDir()
 	outputDir := filepath.Join(t.TempDir(), "generated")
 
-	if err := Run(context.Background(), script, sourceDir, outputDir); err != nil {
+	if _, err := Run(context.Background(), script, sourceDir, outputDir); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(outputDir, "deck.json")); err != nil {
@@ -118,7 +118,7 @@ echo "$2" > "$2/args-output.txt"
 	sourceDir := t.TempDir()
 	outputDir := filepath.Join(t.TempDir(), "generated")
 
-	if err := Run(context.Background(), script, sourceDir, outputDir); err != nil {
+	if _, err := Run(context.Background(), script, sourceDir, outputDir); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 
@@ -145,7 +145,7 @@ func TestRunFailurePropagatesOutput(t *testing.T) {
 echo "boom" >&2
 exit 1
 `)
-	err := Run(context.Background(), script, t.TempDir(), filepath.Join(t.TempDir(), "generated"))
+	_, err := Run(context.Background(), script, t.TempDir(), filepath.Join(t.TempDir(), "generated"))
 	if err == nil {
 		t.Fatal("expected error from failing hook, got nil")
 	}
