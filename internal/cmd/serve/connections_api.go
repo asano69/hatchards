@@ -68,8 +68,8 @@ func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.D
 			return e.BadRequestError("update connection failed", err)
 		}
 
-		// Disabling a connection also removes its local data, so it leaves
-		// no trace on disk until it's re-enabled and synced again.
+		// Disabling a connection removes its local data even though the
+		// record itself still exists (re-enabling triggers a fresh sync).
 		if !body.Enabled {
 			if err := removeConnectionData(dataRoot, body.Name); err != nil {
 				logrus.WithError(err).Warn("cleanup connection data failed")
@@ -79,4 +79,35 @@ func RegisterConnectionsAPI(r *router.Router[*core.RequestEvent], database *db.D
 
 		return e.JSON(http.StatusOK, record)
 	}).Bind(apis.RequireSuperuserAuth())
+
+	// registerConnectionDeleteCleanup ensures local mirror data is always
+	// removed when a "connections" record is deleted — regardless of
+	// whether the deletion came through a dedicated route or PocketBase's
+	// generic Record API (e.g. the frontend's
+	// pb.collection("connections").delete(id), which never touches this
+	// file's HTTP handlers). This mirrors the OnRecordCreate hook pattern
+	// already used in internal/db/db.go for reviews -> cards syncing.
+	registerConnectionDeleteCleanup(database, dataRoot)
+}
+
+// registerConnectionDeleteCleanup binds an OnRecordDelete hook for the
+// "connections" collection. It reads the record's name before deletion (the
+// mirror directory name is derived from Name, see db.SanitizeConnectionName)
+// and removes the corresponding local directories after the delete commits.
+// A cleanup failure is logged but does not roll back the delete — the
+// connection record itself is still gone, matching the disable-cleanup
+// behaviour above where a cleanup error is the exception, not the rule.
+func registerConnectionDeleteCleanup(database *db.Database, dataRoot string) {
+	database.App().OnRecordDelete("connections").BindFunc(func(e *core.RecordEvent) error {
+		name := e.Record.GetString("name")
+
+		if err := e.Next(); err != nil {
+			return err
+		}
+
+		if err := removeConnectionData(dataRoot, name); err != nil {
+			logrus.WithError(err).Warn("cleanup connection data failed after delete")
+		}
+		return nil
+	})
 }
