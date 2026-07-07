@@ -7,7 +7,7 @@
 >This app is still under development.
 
 [hashcards](https://github.com/eudoxia0/hashcards) is a plain-text spaced repetition system.  
-It parses JSON files containing flashcards, stores performance data in [PocketBase](https://github.com/pocketbase/pocketbase) × [SolidJS](https://github.com/solidjs/solid), and presents cards through a web interface using the FSRS algorithm for scheduling.
+It parses JSON files containing flashcards, stores performance data in SQLite3, and presents cards through a web interface using the FSRS algorithm for scheduling.
 
 <img src="frontend/public/favicon.svg" width="100" align="right" />
 Features:
