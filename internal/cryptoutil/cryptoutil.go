@@ -11,7 +11,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/asano69/hashcards/internal/errs"
+	"github.com/asano69/hatchcards/internal/errs"
 )
 
 // masterKeyEnv holds the base64-encoded 32-byte AES-256 master key.

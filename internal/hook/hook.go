@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/asano69/hashcards/internal/errs"
+	"github.com/asano69/hatchcards/internal/errs"
 )
 
 // nameRe rejects anything but a bare identifier, so a name can never

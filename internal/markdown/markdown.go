@@ -25,8 +25,8 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
 
-	"github.com/asano69/hashcards/internal/media"
-	"github.com/asano69/hashcards/internal/types"
+	"github.com/asano69/hatchcards/internal/media"
+	"github.com/asano69/hatchcards/internal/types"
 )
 
 // renderer is a configured goldmark instance shared across all calls.

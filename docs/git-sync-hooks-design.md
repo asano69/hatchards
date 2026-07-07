@@ -76,7 +76,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/asano69/hashcards/internal/errs"
+	"github.com/asano69/hatchcards/internal/errs"
 )
 
 // nameRe rejects anything but a bare identifier, so a name can never
@@ -214,7 +214,7 @@ hooks/                 <- ホスト側で用意、read-onlyでマウント
   question_to_json     <- 実行可能ファイル（言語不問）
 ```
 
-`compose.yaml` に `./hooks:/hashcards/hooks:ro` を追加。既存の
+`compose.yaml` に `./hooks:/hatchcards/hooks:ro` を追加。既存の
 `scripts/question_to_json.py` のような「input_dir, output_dirを取る」契約の
 スクリプトはそのまま流用できる（環境変数経由で渡す点だけ合わせる）。
 

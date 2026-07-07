@@ -1,16 +1,16 @@
 services:
-  hashcards:
-    image: ghcr.io/asano69/hashcards:latest
-    container_name: hashcards
+  hatchcards:
+    image: ghcr.io/asano69/hatchcards:latest
+    container_name: hatchcards
     restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
-      - hashcards.env
+      - hatchcards.env
     volumes:
-      - ./data:/hashcards/pb_data
-      - ./cards:/hashcards/cards
-      - ./hooks:/hashcards/hooks # optional
+      - ./data:/hatchcards/pb_data
+      - ./cards:/hatchcards/cards
+      - ./hooks:/hatchcards/hooks # optional
       #- /etc/ssl/certs/root_ca.crt:/certs/root_ca.crt:ro # optional
     environment:
       - TZ=Europe/London
@@ -35,7 +35,7 @@ services:
     #  - traefik_net
     #labels:
     #  - traefik.enable=true
-    #  - traefik.http.routers.hashcards.rule=Host(`hashcards.app.internal`)
+    #  - traefik.http.routers.hatchcards.rule=Host(`hatchcards.app.internal`)
 #volumes:
 #  data:
 #  cards:

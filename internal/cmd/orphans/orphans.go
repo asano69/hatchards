@@ -10,9 +10,9 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 
-	"github.com/asano69/hashcards/internal/collection"
-	"github.com/asano69/hashcards/internal/db"
-	"github.com/asano69/hashcards/internal/types"
+	"github.com/asano69/hatchcards/internal/collection"
+	"github.com/asano69/hatchcards/internal/db"
+	"github.com/asano69/hatchcards/internal/types"
 )
 
 func List(app *pocketbase.PocketBase, root string, out io.Writer) error {

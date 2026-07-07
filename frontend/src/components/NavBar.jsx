@@ -3,7 +3,7 @@ import { A } from "@solidjs/router";
 import pb from "../lib/pb";
 
 // Shared top navigation bar shown on Home, Stats, and Admin.
-// The "Hashcards" title itself links back to Home, so only Stats and
+// The "Hatchcards" title itself links back to Home, so only Stats and
 // Admin need explicit links here.
 //
 // Refresh re-scans the deck directory on the server (POST /api/rescan),

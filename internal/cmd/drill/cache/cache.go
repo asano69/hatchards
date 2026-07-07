@@ -8,9 +8,9 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/asano69/hashcards/internal/collection"
-	"github.com/asano69/hashcards/internal/markdown"
-	"github.com/asano69/hashcards/internal/types"
+	"github.com/asano69/hatchcards/internal/collection"
+	"github.com/asano69/hatchcards/internal/markdown"
+	"github.com/asano69/hatchcards/internal/types"
 )
 
 // Entry holds the pre-rendered HTML for one card.

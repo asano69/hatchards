@@ -8,11 +8,11 @@ import (
 	"io"
 	"strings"
 
-	"github.com/asano69/hashcards/internal/collection"
-	"github.com/asano69/hashcards/internal/db"
-	"github.com/asano69/hashcards/internal/markdown"
-	"github.com/asano69/hashcards/internal/media"
-	"github.com/asano69/hashcards/internal/types"
+	"github.com/asano69/hatchcards/internal/collection"
+	"github.com/asano69/hatchcards/internal/db"
+	"github.com/asano69/hatchcards/internal/markdown"
+	"github.com/asano69/hatchcards/internal/media"
+	"github.com/asano69/hatchcards/internal/types"
 )
 
 // Result is the outcome of a single check run.

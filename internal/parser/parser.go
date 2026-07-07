@@ -28,8 +28,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/asano69/hashcards/internal/errs"
-	"github.com/asano69/hashcards/internal/types"
+	"github.com/asano69/hatchcards/internal/errs"
+	"github.com/asano69/hatchcards/internal/types"
 )
 
 // jsonCard is the on-disk representation of a single entry in a deck's

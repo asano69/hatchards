@@ -1,4 +1,4 @@
-BINARY := hashcards
+BINARY := hatchcards
 
 .PHONY: frontend-deps
 frontend-deps:
@@ -20,7 +20,7 @@ kill-ports:
 
 .PHONY: server
 server: kill-ports build
-	#./hashcards migrate up --dir=pb_data
+	#./hatchcards migrate up --dir=pb_data
 	./$(BINARY) superuser upsert admin@mail.internal password --dir=pb_data
 	./$(BINARY) serve
 
@@ -45,7 +45,7 @@ test:
 
 
 migrate-collections:
-	go run ./cmd/hashcards migrate collections
+	go run ./cmd/hatchcards migrate collections
 
 
 .PHONY: card
@@ -65,20 +65,20 @@ build-container:
 # ─────────────────────────────────────────
 .PHONY: build-image
 build-image: ## Build Docker image
-	docker build -t registry.internal/go-hashcards:latest .
+	docker build -t registry.internal/go-hatchcards:latest .
 
 # ─────────────────────────────────────────
 .PHONY: build-image-no-cache
 build-image-no-cache: ## Build Docker image
-	docker build --no-cache -t registry.internal/go-hashcards:latest .
+	docker build --no-cache -t registry.internal/go-hatchcards:latest .
 
 .PHONY: push-image
 push-image: ## Push Docker image
-	docker push registry.internal/go-hashcards:latest
+	docker push registry.internal/go-hatchcards:latest
 
 .PHONY: deploy
 deploy: build-image push-image ## (*) Deploy stack via Komodo
-	docker exec -it komodo km x -y destroy-stack hashcards
-	docker exec -it komodo km x -y pull-stack   hashcards
-	docker exec -it komodo km x -y deploy-stack hashcards
+	docker exec -it komodo km x -y destroy-stack hatchcards
+	docker exec -it komodo km x -y pull-stack   hatchcards
+	docker exec -it komodo km x -y deploy-stack hatchcards
 
