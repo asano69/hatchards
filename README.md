@@ -31,7 +31,7 @@ Tech Stack
 
 ## Recommended Workflow
 1. In a Markdown editor such as Obsidian, take notes on what you have understood about topics that interest you.
-2. In question sections (e.g. `## Question::DeckName {{Q&A}} ---`), write the information you want to memorize as a list of Q&A pairs.
+2. In question sections, write the information you want to memorize as a list of Q&A pairs. (e.g. `## Question::DeckName {{Q&A}} ---`)
 3. Push the Markdown notebooks to a remote repository.
 4. If the repository mirroring settings are configured correctly, flashcards will be generated automatically.
 
